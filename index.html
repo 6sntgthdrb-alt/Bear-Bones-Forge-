@@ -384,6 +384,71 @@ body.themed .banner b, body.themed .fcard b, body.themed .pill.acc, body.themed 
 [data-style="void"] .sect-h h3::before{display:none}
 [data-style="void"] .card,[data-style="void"] .unit,[data-style="void"] .sect,[data-style="void"] .strat,[data-style="void"] .mcard,[data-style="void"] .detbox{box-shadow:none}
 [data-style="void"] header.top,[data-style="void"] nav.tabs{border-color:var(--line)}
+
+/* Iron Forge */
+:root[data-style="forge"]{--bg-b:#16191c;--panel-b:#20252a;--panel2-b:#2a3036;--line-b:#3a4148;--text:#dde0e3;--muted-b:#8f979e;--accent:#c9a24a;--trim:#c9a24a;--style-acc:#c9a24a;--on-accent:#1a1406;
+  --display:"Black Ops One","Barlow Condensed",sans-serif;--body:"Barlow",system-ui,sans-serif;--r:3px;--r-sm:2px;--tex-opacity:.10;--shade:rgba(0,0,0,.45);color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-style="forge"]:not([data-theme="dark"]){--bg-b:#d6d9dc;--panel-b:#e9ebed;--panel2-b:#dcdfe2;--line-b:#a9afb5;--text:#16191c;--muted-b:#555d64;--accent:#8a6a1e;--trim:#8a6a1e;--style-acc:#8a6a1e;--on-accent:#fff;--shade:rgba(0,0,0,.15);color-scheme:light}}
+:root[data-style="forge"][data-theme="light"]{--bg-b:#d6d9dc;--panel-b:#e9ebed;--panel2-b:#dcdfe2;--line-b:#a9afb5;--text:#16191c;--muted-b:#555d64;--accent:#8a6a1e;--trim:#8a6a1e;--style-acc:#8a6a1e;--on-accent:#fff;--shade:rgba(0,0,0,.15);color-scheme:light}
+[data-style="forge"] body::before{background:repeating-linear-gradient(135deg,transparent 0 14px,rgba(255,255,255,.035) 14px 15px),radial-gradient(circle at 12px 12px,rgba(255,255,255,.18) 0 1.5px,transparent 2px) 0 0/48px 48px}
+[data-style="forge"] h1,[data-style="forge"] h2,[data-style="forge"] h3,[data-style="forge"] .sec-h,[data-style="forge"] .group-h{text-transform:uppercase;letter-spacing:.06em;font-weight:400}
+[data-style="forge"] .sec-h,[data-style="forge"] .group-h,[data-style="forge"] .cb-h,[data-style="forge"] nav.tabs button,[data-style="forge"] .seg button{font-family:"Barlow Condensed",sans-serif;font-weight:700}
+[data-style="forge"] .card,[data-style="forge"] .unit,[data-style="forge"] .sect,[data-style="forge"] .strat,[data-style="forge"] .detbox,[data-style="forge"] .mcard{border-left:4px solid var(--trim);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 2px 0 rgba(0,0,0,.35)}
+[data-style="forge"] .sect-h{padding-bottom:6px;border-bottom:5px solid transparent;border-image:repeating-linear-gradient(45deg,var(--trim) 0 8px,transparent 8px 16px) 5}
+[data-style="forge"] .sect-h h3::before{display:none}
+[data-style="forge"] header.top{border-bottom:3px solid var(--trim)}
+[data-style="forge"] .btn.primary{text-transform:uppercase;letter-spacing:.06em}
+/* Ceramite Armour */
+:root[data-style="ceramite"]{--bg-b:#1c1f22;--panel-b:#272b2f;--panel2-b:#31363b;--line-b:#3d4349;--text:#eef0f2;--muted-b:#9aa1a8;--accent:#2a7a4a;--trim:#8fd1a8;--style-acc:#2a7a4a;--on-accent:#fff;
+  --display:"Rajdhani",system-ui,sans-serif;--body:"Rajdhani",system-ui,sans-serif;--r:18px;--r-sm:12px;--tex-opacity:0;--shade:rgba(0,0,0,.4);color-scheme:dark}
+@media (prefers-color-scheme:light){:root[data-style="ceramite"]:not([data-theme="dark"]){--bg-b:#e6e8eb;--panel-b:#f5f6f8;--panel2-b:#e9ecef;--line-b:#cdd2d7;--text:#15181b;--muted-b:#5d656c;--trim:#2a7a4a;--shade:rgba(20,30,40,.12);color-scheme:light}}
+:root[data-style="ceramite"][data-theme="light"]{--bg-b:#e6e8eb;--panel-b:#f5f6f8;--panel2-b:#e9ecef;--line-b:#cdd2d7;--text:#15181b;--muted-b:#5d656c;--trim:#2a7a4a;--shade:rgba(20,30,40,.12);color-scheme:light}
+[data-style="ceramite"] body{font-weight:500;font-size:1.06rem}
+[data-style="ceramite"] h1,[data-style="ceramite"] h2,[data-style="ceramite"] h3{font-weight:700;letter-spacing:.02em}
+[data-style="ceramite"] .sect-h h3::before{display:none}
+[data-style="ceramite"] .sect{background:none;border:0;box-shadow:none;padding:4px 0}
+[data-style="ceramite"] .sect-h{background:var(--accent);color:var(--on-accent);padding:10px 14px;border-radius:var(--r)}
+[data-style="ceramite"] .sect-h *{color:var(--on-accent) !important}
+[data-style="ceramite"] .card,[data-style="ceramite"] .unit,[data-style="ceramite"] .strat,[data-style="ceramite"] .detbox,[data-style="ceramite"] .mcard{border:0;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 3px 10px var(--shade)}
+[data-style="ceramite"] .unit{border-left:0}
+[data-style="ceramite"] .unit.warlord{box-shadow:inset 4px 0 0 var(--accent2,var(--accent)),0 3px 10px var(--shade)}
+[data-style="ceramite"] .unit.has-err{box-shadow:inset 4px 0 0 var(--err),0 3px 10px var(--shade)}
+[data-style="ceramite"] .sbox{border:0;border-radius:12px;border-top:0;box-shadow:inset 0 -3px 0 var(--accent2,var(--accent)),0 3px 8px var(--shade)}
+[data-style="ceramite"] header.top,[data-style="ceramite"] nav.tabs{border-color:var(--line)}
+[data-style="ceramite"] .btn,[data-style="ceramite"] .seg button{font-weight:700}
+/* Cogitator Terminal */
+:root[data-style="terminal"]{--bg-b:#030805;--panel-b:#06100a;--panel2-b:#0a1a10;--line-b:#1f5c2d;--text:#7dff9c;--muted-b:#3fae5c;--accent:#6dff8f;--trim:#6dff8f;--style-acc:#6dff8f;--on-accent:#021006;--ok:#6dff8f;--warn:#e8ff6d;--err:#ff6d6d;
+  --display:"VT323",monospace;--body:"IBM Plex Mono",ui-monospace,monospace;--r:0px;--r-sm:0px;--tex-opacity:.5;--shade:transparent;color-scheme:dark;--stat-bg:#020604;--stat-sh:none}
+[data-style="terminal"] body{--accent:#6dff8f !important;--accent2:#6dff8f !important;--trim:#6dff8f !important;--on-accent:#021006 !important;--acc-text:#6dff8f !important;--bg:var(--bg-b) !important;--panel:var(--panel-b) !important;--panel2:var(--panel2-b) !important;--line:var(--line-b) !important;--muted:var(--muted-b) !important;font-size:.92rem}
+[data-style="terminal"] body::before{background:repeating-linear-gradient(0deg,rgba(109,255,143,.06) 0 1px,transparent 1px 3px)}
+[data-style="terminal"] h1,[data-style="terminal"] h2,[data-style="terminal"] h3,[data-style="terminal"] .sec-h,[data-style="terminal"] .group-h,[data-style="terminal"] nav.tabs button,[data-style="terminal"] .seg button{font-family:"VT323",monospace;font-weight:400;text-transform:uppercase;letter-spacing:.06em}
+[data-style="terminal"] h2{font-size:1.6rem}[data-style="terminal"] h3{font-size:1.35rem}[data-style="terminal"] .sec-h{font-size:1.15rem}
+[data-style="terminal"] .sec-h::before{content:"// "}
+[data-style="terminal"] .sect-h h3::before{content:">";transform:none;background:none;width:auto;height:auto}
+[data-style="terminal"] .card,[data-style="terminal"] .unit,[data-style="terminal"] .sect,[data-style="terminal"] .strat,[data-style="terminal"] .detbox,[data-style="terminal"] .mcard,[data-style="terminal"] .sbox{box-shadow:none;border:1px solid var(--line)}
+[data-style="terminal"] .term{background:var(--text);color:var(--bg-b) !important;text-decoration:none;padding:0 3px}
+[data-style="terminal"] .banner,[data-style="terminal"] .fcard,[data-style="terminal"] .lemb{filter:grayscale(1) sepia(1) hue-rotate(70deg) saturate(2.5) brightness(.8)}
+[data-style="terminal"] .sbox .sv{font-family:"VT323",monospace;font-size:1.8rem;font-weight:400}
+[data-style="terminal"] .sg6.sm .sbox .sv{font-size:1.35rem}
+/* Imperial Dossier */
+:root[data-style="dossier"]{--bg-b:#e3d5ae;--panel-b:#f4ead0;--panel2-b:#eadfbe;--line-b:#b9a774;--text:#2b2416;--muted-b:#6b5d3d;--accent:#a8261e;--trim:#a8261e;--style-acc:#a8261e;--on-accent:#fbf3df;
+  --display:"Special Elite","Courier Prime",monospace;--body:"Courier Prime",ui-monospace,monospace;--r:2px;--r-sm:2px;--tex-opacity:.18;--shade:rgba(60,40,10,.15);color-scheme:light}
+@media (prefers-color-scheme:dark){:root[data-style="dossier"]:not([data-theme="light"]){--bg-b:#1d1a14;--panel-b:#27231a;--panel2-b:#312c21;--line-b:#5a4f36;--text:#eadfbe;--muted-b:#ab9c78;--accent:#e0574b;--trim:#e0574b;--style-acc:#e0574b;--on-accent:#1d0705;--shade:rgba(0,0,0,.4);color-scheme:dark}}
+:root[data-style="dossier"][data-theme="dark"]{--bg-b:#1d1a14;--panel-b:#27231a;--panel2-b:#312c21;--line-b:#5a4f36;--text:#eadfbe;--muted-b:#ab9c78;--accent:#e0574b;--trim:#e0574b;--style-acc:#e0574b;--on-accent:#1d0705;--shade:rgba(0,0,0,.4);color-scheme:dark}
+[data-style="dossier"] body::before{background:repeating-linear-gradient(0deg,transparent 0 27px,rgba(80,110,160,.35) 27px 28px),linear-gradient(90deg,transparent 0 34px,rgba(168,38,30,.35) 34px 35px,transparent 35px)}
+[data-style="dossier"] h1,[data-style="dossier"] h2,[data-style="dossier"] h3{font-weight:400;letter-spacing:.03em}
+[data-style="dossier"] .sec-h,[data-style="dossier"] .group-h,[data-style="dossier"] .sect-h h3{color:var(--accent) !important;text-transform:uppercase;letter-spacing:.12em}
+[data-style="dossier"] .sect-h h3{display:inline-block;border:2px solid var(--accent);padding:1px 8px;transform:rotate(-1.5deg)}
+[data-style="dossier"] .sect-h h3::before{display:none}
+[data-style="dossier"] .card,[data-style="dossier"] .unit,[data-style="dossier"] .strat,[data-style="dossier"] .detbox,[data-style="dossier"] .mcard{box-shadow:2px 2px 0 var(--shade)}
+[data-style="dossier"] .sect{background:transparent;border-style:dashed}
+[data-style="dossier"] .brand h1{font-family:var(--display)}
+[data-style="dossier"] .brand::after{content:"CLASSIFIED";position:absolute;right:16px;top:calc(env(safe-area-inset-top) + 14px);border:2px solid var(--accent);color:var(--accent);font:400 .7rem var(--display);padding:1px 5px;transform:rotate(-7deg);letter-spacing:.1em}
+[data-style="dossier"] header.top{position:sticky}
+[data-style="dossier"] .term{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px}
+
+.banner{box-shadow:inset 0 0 0 1px var(--trim),inset 0 -14px 26px -14px var(--accent2,transparent),0 2px 8px var(--shade) !important}
+.unit.warlord{border-left-color:var(--accent2,var(--accent))}
 /* Style picker */
 .stylegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .stylecard{display:flex;flex-direction:column;gap:6px;padding:0;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:none;cursor:pointer;text-align:left;color:var(--text)}
@@ -422,7 +487,7 @@ button.wtag{cursor:pointer}
 :root{--stat-bg:color-mix(in srgb,var(--panel2) 84%,var(--text));--stat-sh:0 2px 6px rgba(40,25,5,.22)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--stat-bg:color-mix(in srgb,var(--panel2) 50%,#000);--stat-sh:0 3px 10px rgba(0,0,0,.55)}}
 :root[data-theme="dark"]{--stat-bg:color-mix(in srgb,var(--panel2) 50%,#000);--stat-sh:0 3px 10px rgba(0,0,0,.55)}
-.sbox{background:var(--stat-bg);border:1px solid color-mix(in srgb,var(--line) 70%,#000);border-top:3px solid var(--accent);box-shadow:var(--stat-sh),inset 0 1px 0 rgba(255,255,255,.05)}
+.sbox{background:var(--stat-bg);border:1px solid color-mix(in srgb,var(--line) 70%,#000);border-top:3px solid var(--accent2,var(--accent));box-shadow:var(--stat-sh),inset 0 1px 0 rgba(255,255,255,.05)}
 .sbox .sl{color:var(--acc-text,var(--accent));opacity:.9}
 .sbox .sv{font-size:1.45rem}
 .sg6.sm .sbox{border-top-width:2px}
@@ -471,7 +536,7 @@ function armyName(a, l){
   const f = D && D.factions.find(x => x.id === fidOf(a));
   return f ? f.name : (l && l.armyName) || fidOf(a);
 }
-const ACCENT = { "BLOOD ANGELS":"#c0262f", "SALAMANDERS":"#2f9655", "ULTRAMARINES":"#2a5db0", "DARK ANGELS":"#2d6a45", "SPACE WOLVES":"#5a7a9c", "BLACK TEMPLARS":"#6f6f6f",
+const ACCENT = { "BLOOD ANGELS":"#c0262f", "SALAMANDERS":"#2b6b3c", "ULTRAMARINES":"#2a5db0", "DARK ANGELS":"#2d6a45", "SPACE WOLVES":"#5a7a9c", "BLACK TEMPLARS":"#6f6f6f",
   "DEATHWATCH":"#59606b", "IMPERIAL FISTS":"#a8861a", "IRON HANDS":"#5f6468", "RAVEN GUARD":"#4a4a52", "WHITE SCARS":"#8a8f94", "BLOOD RAVENS":"#8e1b22",
   SM:"#2b5fae", AC:"#b8902a", AS:"#a31f3c", AM:"#5f7232", AdM:"#b5361f", GK:"#61809e", QI:"#2d5c9e", AoI:"#7a6a4f", TL:"#7a6a4f",
   CSM:"#9b2a1f", DG:"#6f7f22", TS:"#2c66b8", WE:"#b01e1e", EC:"#a3368f", CD:"#8a2f9e", QT:"#8b1e1e",
@@ -1117,11 +1182,12 @@ function listText(l){
 }
 
 /* ============ army themes ============ */
-const TRIM = { "BLOOD ANGELS":"#d4a845", "SALAMANDERS":"#e8742c", "DARK ANGELS":"#d8cba3", "SPACE WOLVES":"#d9b44a", "BLACK TEMPLARS":"#e8e2d4",
+const TRIM = { "BLOOD ANGELS":"#d4a845", "SALAMANDERS":"#d4a845", "DARK ANGELS":"#d8cba3", "SPACE WOLVES":"#d9b44a", "BLACK TEMPLARS":"#e8e2d4",
   "DEATHWATCH":"#c3c8ce", "ULTRAMARINES":"#d4a845", "IMPERIAL FISTS":"#b82a22", "IRON HANDS":"#c3c8ce", "RAVEN GUARD":"#d6d6d6", "WHITE SCARS":"#b8262a",
   "BLOOD RAVENS":"#d8cba3", SM:"#d4a845", AC:"#e7cf7a", AS:"#e8e2d4", AM:"#c9b37a", AdM:"#d8cba3", GK:"#d4a845", QI:"#d4a845",
   CSM:"#c9a75a", DG:"#c2bb5a", TS:"#d9b44a", WE:"#b9893a", EC:"#d6c0e0", CD:"#d9a6e8", QT:"#b9893a",
   NEC:"#3be796", ORK:"#e3c13a", TYR:"#e8d7b5", GC:"#c8a6e8", AE:"#e8e2d5", DRU:"#7fe0c8", TAU:"#f0e6d6", LoV:"#f0b04a" };
+const ACCENT2 = { "SALAMANDERS":"#d2461e" };
 const TEX_OF = { "BLOOD ANGELS":"blood", "SALAMANDERS":"embers", "DARK ANGELS":"bone", "SPACE WOLVES":"frost", "BLACK TEMPLARS":"hatch", "BLOOD RAVENS":"blood", "WHITE SCARS":"hatch",
   SM:"metal", AC:"metal", AS:"embers", AM:"metal", AdM:"circuit", GK:"frost", QI:"metal", AoI:"hatch", TL:"metal",
   CSM:"warp", DG:"organic", TS:"warp", WE:"blood", EC:"warp", CD:"warp", QT:"blood",
@@ -1147,18 +1213,20 @@ const ALLEG_FONTS = {
   xenos:    { title:'"Exo 2",system-ui,sans-serif',    head:'"Exo 2",system-ui,sans-serif' }
 };
 function lum(hex){ const n = parseInt(hex.slice(1),16); const ch = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*ch[0] + .7152*ch[1] + .0722*ch[2]; }
+const flair0 = () => S.settings.armyColours !== false;
 function applyTheme(army){
   const b = document.body.style;
-  if (!army) { ["--accent","--army-acc","--trim","--on-accent","--tex","--army-title","--army-head","--banner-pat","--acc-text-d","--acc-text-l"].forEach(v => b.removeProperty(v)); delete document.body.dataset.alleg; document.body.classList.remove("themed"); return; }
+  if (!army) { ["--accent","--accent2","--army-acc","--trim","--on-accent","--tex","--army-title","--army-head","--banner-pat","--acc-text-d","--acc-text-l"].forEach(v => b.removeProperty(v)); delete document.body.dataset.alleg; document.body.classList.remove("themed"); return; }
   const acc = accentOf(army), trim = TRIM[chapterOf(army)] || TRIM[fidOf(army)] || "#d4a845";
   const tex = TEX[TEX_OF[chapterOf(army)] || TEX_OF[fidOf(army)] || "metal"](acc);
   const al = allegOf(army), F = ALLEG_FONTS[al];
   b.setProperty("--army-acc", acc);
+  const a2 = ACCENT2[chapterOf(army)] || ACCENT2[fidOf(army)]; if (a2 && flair0()) b.setProperty("--accent2", a2); else b.removeProperty("--accent2");
   const flair = S.settings.armyColours !== false;
   if (flair) { b.setProperty("--accent", acc); b.setProperty("--trim", trim); b.setProperty("--on-accent", lum(acc) > .4 ? "#1a1408" : "#fff"); }
   else ["--accent","--trim","--on-accent"].forEach(v => b.removeProperty(v));
   b.setProperty("--tex", tex); b.setProperty("--banner-pat", tex);
-  b.setProperty("--army-title", F.title); if ((S.settings.style || "codex") === "codex") b.setProperty("--army-head", F.head); else b.removeProperty("--army-head");
+  b.setProperty("--army-title", F.title); b.removeProperty("--army-head");
   document.body.dataset.alleg = al;
   b.setProperty("--acc-text-d", shadeTo(acc, .2, true)); b.setProperty("--acc-text-l", shadeTo(acc, .09, false));
   document.body.classList.toggle("themed", flair);
@@ -1385,7 +1453,7 @@ function viewBuild(){
   }).join("");
   return `<div class="stack">
     ${bannerHtml(l)}
-    <div class="row small"><span class="muted grow">Icon and banner for all ${esc(armyName(l.army, l))} lists</span><button class="btn small" data-act="icon" data-army="${esc(normArmy(l.army))}">Upload icon</button>${S.icons[normArmy(l.army)] ? `<button class="btn small" data-act="iconreset" data-army="${esc(normArmy(l.army))}">Use drawn icon</button>` : ""}<button class="btn small" data-act="banner" data-army="${esc(normArmy(l.army))}">Upload banner</button>${S.banners[normArmy(l.army)] ? `<button class="btn small" data-act="bannerreset" data-army="${esc(normArmy(l.army))}">Use default banner</button>` : ""}</div>
+    <div class="row small"><button class="btn small" data-act="icon" data-army="${esc(normArmy(l.army))}">Upload icon</button>${S.icons[normArmy(l.army)] ? `<button class="btn small" data-act="iconreset" data-army="${esc(normArmy(l.army))}">Use drawn icon</button>` : ""}<button class="btn small" data-act="banner" data-army="${esc(normArmy(l.army))}">Upload banner</button>${S.banners[normArmy(l.army)] ? `<button class="btn small" data-act="bannerreset" data-army="${esc(normArmy(l.army))}">Use default banner</button>` : ""}</div>
     <label class="f" for="lname">List name<input type="text" id="lname" value="${esc(l.name)}" data-in="lname"></label>
     <div class="sec-h">Battle size</div>
     <div class="seg" role="group" aria-label="Battle size">${SIZES.map(s => `<button data-act="setsize" data-v="${s.pts}" aria-pressed="${s.pts===l.points}">${s.name}<small class="segsub">${s.pts} pts</small></button>`).join("")}</div>
@@ -1829,17 +1897,17 @@ function gameAction(t){
 
 /* ---- Data ---- */
 function appearanceHtml(){
-  const cur = S.settings.style || "codex", set = S.settings;
+  const cur = (STYLES.find(x => x.k === S.settings.style) || STYLES[0]).k, st0 = STYLES.find(x => x.k === cur), set = S.settings;
   const card = st => { const p = st.pv;
     return `<button class="stylecard" data-act="style" data-v="${st.k}" aria-pressed="${cur===st.k}">
       <div class="sp" style="background:${p.bg};color:${p.text}"><div class="sp-h" style="font-family:${p.font}${p.bar?`;background:${p.acc};color:#fff;padding:2px 5px;border-radius:2px`:""}">Strike Force</div>
-      <div class="sp-c" style="background:${p.panel};border-color:${p.line};border-radius:${st.k==="modern"?"9px":st.k==="hud"||st.k==="datasheet"?"2px":"5px"}"><span class="sp-b" style="background:${p.acc}"></span><span style="font-family:${p.font}">Intercessors</span><b style="margin-left:auto;color:${p.acc}">80</b></div></div>
+      <div class="sp-c" style="background:${p.panel};border-color:${p.line};border-radius:${p.round?"9px":"2px"}"><span class="sp-b" style="background:${p.acc}"></span><span style="font-family:${p.font}">Intercessors</span><b style="margin-left:auto;color:${p.acc}">80</b></div></div>
       <div class="sl"><b>${esc(st.name)}</b><span class="muted">${esc(st.desc)}</span></div></button>`; };
   const tog = (k, label, on) => `<label class="check"><input type="checkbox" data-ch="look" data-k="${k}"${on?" checked":""}><span>${label}</span></label>`;
   return `<details class="card" open><summary><h3 style="display:inline">Appearance</h3> <span class="small muted">${esc((STYLES.find(x=>x.k===cur)||STYLES[0]).name)}</span></summary>
     <div class="stack" style="margin-top:10px">
       <div class="stylegrid">${STYLES.map(card).join("")}</div>
-      <div><div class="sec-h">Light or dark</div><div class="seg" role="group" aria-label="Light or dark">${[["auto","Match my device"],["light","Light"],["dark","Dark"]].map(([k,t]) => `<button data-act="mode" data-v="${k}" aria-pressed="${S.mode===k}"${cur==="void"?" disabled":""}>${t}</button>`).join("")}</div>${cur==="void"?`<div class="small muted" style="margin-top:4px">Void Black is always dark.</div>`:""}</div>
+      <div><div class="sec-h">Light or dark</div><div class="seg" role="group" aria-label="Light or dark">${[["auto","Match my device"],["light","Light"],["dark","Dark"]].map(([k,t]) => `<button data-act="mode" data-v="${k}" aria-pressed="${S.mode===k}"${st0.forced?" disabled":""}>${t}</button>`).join("")}</div>${st0.forced?`<div class="small muted" style="margin-top:4px">${esc(st0.name)} is always ${st0.forced}.</div>`:""}</div>
       <div><div class="sec-h">Text size</div><div class="seg" role="group" aria-label="Text size">${[["s","Small"],["m","Normal"],["l","Large"],["xl","Extra large"]].map(([k,t]) => `<button data-act="textsize" data-v="${k}" aria-pressed="${(set.textSize||"m")===k}">${t}</button>`).join("")}</div></div>
       <div>${tog("armyColours", "<b>Army colours</b> — inside a list, the whole app takes on that army's colours", set.armyColours !== false)}
         ${tog("texture", "<b>Background texture</b> — the faint pattern behind everything", set.texture !== false)}
@@ -2341,12 +2409,15 @@ async function loadSiteData(force){
 }
 
 const STYLES = [
-  { k:"codex", name:"Gothic Codex", desc:"Carved serif, gold trim, army lettering", fonts:"", pv:{ bg:"#ece3cf", panel:"#f6efdf", line:"#c9b993", text:"#2a2219", acc:"#8a6a2b", font:'"Cinzel",serif' } },
+  { k:"forge", name:"Iron Forge", desc:"Gunmetal, brass edges, stencil headings", fonts:"family=Black+Ops+One&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", pv:{ bg:"#16191c", panel:"#22272c", line:"#3a4148", text:"#d9dcdf", acc:"#c9a24a", font:'"Black Ops One",sans-serif' } },
+  { k:"ceramite", name:"Ceramite Armour", desc:"Smooth plates in your army's colour", fonts:"family=Rajdhani:wght@500;600;700", pv:{ bg:"#202326", panel:"#2c3034", line:"#3a3f44", text:"#eef0f2", acc:"#2a7a4a", font:'"Rajdhani",sans-serif', round:true } },
+  { k:"terminal", name:"Cogitator Terminal", desc:"Green-on-black data-slate, always dark", fonts:"family=VT323&family=IBM+Plex+Mono:wght@400;500;600", forced:"dark", pv:{ bg:"#030805", panel:"#030805", line:"#2c8a44", text:"#6dff8f", acc:"#6dff8f", font:'"VT323",monospace' } },
+  { k:"dossier", name:"Imperial Dossier", desc:"Inquisition file, typewriter, red stamps", fonts:"family=Special+Elite&family=Courier+Prime:wght@400;700", pv:{ bg:"#e9dcb8", panel:"#f4ead0", line:"#b9a774", text:"#2b2416", acc:"#a8261e", font:'"Special Elite",monospace' } },
   { k:"hud", name:"Tactical HUD", desc:"Sharp, techy, auspex-screen feel", fonts:"family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700", pv:{ bg:"#0a1017", panel:"#101a24", line:"#22384b", text:"#d8e6f2", acc:"#2ec4b6", font:'"Chakra Petch",sans-serif' } },
-  { k:"modern", name:"Clean Modern", desc:"Soft cards, rounded, easy reading", fonts:"family=Manrope:wght@400;500;600;700;800", pv:{ bg:"#f3f4f7", panel:"#ffffff", line:"#e0e3e9", text:"#16181d", acc:"#4f46e5", font:'"Manrope",sans-serif' } },
+  { k:"modern", name:"Clean Modern", desc:"Soft cards, rounded, easy reading", fonts:"family=Manrope:wght@400;500;600;700;800", pv:{ bg:"#f3f4f7", panel:"#ffffff", line:"#e0e3e9", text:"#16181d", acc:"#4f46e5", font:'"Manrope",sans-serif', round:true } },
   { k:"datasheet", name:"Datasheet", desc:"Bold header bars like a printed datasheet", fonts:"family=Oswald:wght@500;600;700&family=Roboto+Condensed:wght@400;500;700", pv:{ bg:"#e7e7e3", panel:"#ffffff", line:"#c9c9c2", text:"#111111", acc:"#9e2b20", font:'"Oswald",sans-serif', bar:true } },
   { k:"parchment", name:"Parchment Scroll", desc:"Aged paper, ink and oxblood", fonts:"family=EB+Garamond:wght@400;500;600;700&family=IM+Fell+English+SC", pv:{ bg:"#e6d6b0", panel:"#f2e5c4", line:"#b6995d", text:"#2b1d0e", acc:"#7b2d1a", font:'"IM Fell English SC",serif' } },
-  { k:"void", name:"Void Black", desc:"True black, amber highlights, always dark", fonts:"family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700", pv:{ bg:"#000000", panel:"#0b0b0d", line:"#26262b", text:"#f4f4f5", acc:"#f5a524", font:'"IBM Plex Sans Condensed",sans-serif' } }
+  { k:"void", name:"Void Black", desc:"True black, amber highlights, always dark", fonts:"family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700", forced:"dark", pv:{ bg:"#000000", panel:"#0b0b0d", line:"#26262b", text:"#f4f4f5", acc:"#f5a524", font:'"IBM Plex Sans Condensed",sans-serif' } }
 ];
 const TEXT_SIZES = { s:15, m:16, l:17.5, xl:19 };
 function loadStyleFonts(st){
@@ -2357,7 +2428,7 @@ function loadStyleFonts(st){
 function applyMode(){
   const r = document.documentElement, st = STYLES.find(x => x.k === S.settings.style) || STYLES[0];
   r.dataset.style = st.k; loadStyleFonts(st);
-  const mode = st.k === "void" ? "dark" : S.mode;
+  const mode = st.forced || S.mode;
   if (mode === "light" || mode === "dark") r.dataset.theme = mode; else if (!window.claude) delete r.dataset.theme;
   r.dataset.tex = S.settings.texture === false ? "off" : "on";
   r.style.fontSize = (TEXT_SIZES[S.settings.textSize] || 16) + "px";
