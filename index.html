@@ -362,7 +362,9 @@ body.themed .banner b, body.themed .fcard b, body.themed .pill.acc, body.themed 
 [data-style="datasheet"] .sect-h{background:var(--accent);margin:-12px -12px 4px;padding:8px 12px;border-radius:var(--r) var(--r) 0 0}
 [data-style="datasheet"] .sect-h h3,[data-style="datasheet"] .sect-h .muted,[data-style="datasheet"] .sect-h *{color:var(--on-accent) !important}
 [data-style="datasheet"] .sect-h h3::before{background:var(--on-accent)}
-[data-style="datasheet"] .ds-stats td{border:2px solid var(--accent);background:var(--panel)}
+[data-style="datasheet"] .sbox{border:2px solid var(--accent);background:var(--panel)}
+[data-style="hud"] .sbox{border-left:2px solid var(--trim)}
+[data-style="parchment"] .sbox{border-style:double;border-width:3px}
 [data-style="datasheet"] .card,[data-style="datasheet"] .unit,[data-style="datasheet"] .strat,[data-style="datasheet"] .detbox{box-shadow:0 1px 0 var(--shade)}
 [data-style="datasheet"] .unit{border-left-width:5px}
 /* Parchment Scroll */
@@ -397,6 +399,24 @@ body.themed .banner b, body.themed .fcard b, body.themed .pill.acc, body.themed 
 .term:hover,.term:focus-visible{text-decoration-style:solid}
 .ruletext p{margin:.4em 0}
 .ps .term{color:#111 !important;text-decoration:none;font-weight:inherit}
+
+/* Warmind-style stat boxes */
+.statblock{display:flex;flex-direction:column;gap:6px}
+.mname{font-weight:700;font-size:.85rem;color:var(--muted);margin-top:4px}
+.sg6{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.sbox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 2px 9px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-sm);min-width:0}
+.sbox .sl{font:600 .66rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.sbox .sv{font:700 1.35rem/1.1 var(--body);font-variant-numeric:tabular-nums;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sg6.sm .sbox{padding:6px 2px 7px}
+.sg6.sm .sbox .sv{font-size:1rem}
+.wpn{padding:8px 0 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.wpn:last-child{border-bottom:0}
+.wn{font-weight:600;font-size:1rem}
+.wkw{display:flex;flex-wrap:wrap;gap:5px}
+.wtag{font:600 .68rem var(--body);letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid color-mix(in srgb,var(--acc-text,var(--accent)) 55%,transparent);color:var(--acc-text,var(--accent));background:color-mix(in srgb,var(--accent) 10%,transparent)}
+button.wtag{cursor:pointer}
+@media (max-width:360px){.sbox .sv{font-size:1.1rem}.sg6{gap:4px}}
+.ps .sg6{gap:3px}.ps .sbox{background:#eee;border-color:#bbb;padding:3px}.ps .sbox .sv{font-size:13px;color:#111}.ps .sbox .sl{color:#444}.ps .wpn{padding:4px 0;gap:3px}.ps .wtag{color:#111;border-color:#999;background:none}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -1572,12 +1592,14 @@ function dsBody(id, opt = {}){
   const d = D.ds[id]; if (!d) return "";
   const models = D.models[id] || [], ab = D.abil[id] || [], k = D.kw[id] || [];
   const wg = (D.wg[id] || []).filter(w => !opt.weapons || opt.weapons.has(wStem(w.name)));
-  const stats = models.length ? `<div class="tblwrap"><table class="ds-stats"><thead><tr>${models.length>1?"<th></th>":""}<th>M</th><th>T</th><th>SV</th><th>W</th><th>LD</th><th>OC</th></tr></thead><tbody>${models.map(m => `<tr>${models.length>1?`<td class="mn">${esc(m.name)}</td>`:""}<td>${esc(m.m)}</td><td>${esc(m.t)}</td><td>${esc(m.sv)}</td><td>${esc(m.w)}</td><td>${esc(m.ld)}</td><td>${esc(m.oc)}</td></tr>`).join("")}</tbody></table></div>
+  const box = (l, v, cls = "") => `<div class="sbox${cls}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
+  const stats = models.length ? `<div class="statblock">${models.map(m => `${models.length>1?`<div class="mname">${esc(m.name)}</div>`:""}<div class="sg6">${box("M",m.m)}${box("T",m.t)}${box("SV",m.sv)}${box("W",m.w)}${box("LD",m.ld)}${box("OC",m.oc)}</div>`).join("")}</div>
     ${models.filter(m => m.inv_sv && m.inv_sv !== "-").map(m => `<div class="small"><b>Invulnerable save ${esc(/^\d$/.test(m.inv_sv) ? m.inv_sv + "+" : m.inv_sv)}</b>${models.length>1?` (${esc(m.name)})`:""}${m.inv_sv_descr?` · <span class="rich">${sanitize(m.inv_sv_descr)}</span>`:""}</div>`).join("")}` : "";
   const wtable = type => {
     const rows = wg.filter(w => (w.type||"").toLowerCase().startsWith(type));
     if (!rows.length) return "";
-    return `<div><div class="sec-h">${type==="ranged"?"Ranged weapons":"Melee weapons"}</div><div class="tblwrap"><table class="wg"><thead><tr><th>Weapon</th><th>Range</th><th>A</th><th>${type==="ranged"?"BS":"WS"}</th><th>S</th><th>AP</th><th>D</th></tr></thead><tbody>${rows.map(w => `<tr><td>${esc(w.name)}${w.description?`<span class="kws">${plain(w.description).split(/\s*,\s*/).filter(Boolean).map(k => ruleFor(k) ? `<button class="kwbtn" data-act="rule" data-k="${esc(k)}">${esc(k)}</button>` : esc(k)).join(", ")}</span>`:""}</td><td>${esc(/^\d+$/.test(w.range) ? w.range + '"' : (w.range||"Melee"))}</td><td>${esc(w.a)}</td><td>${esc(/^\d$/.test(w.bs_ws) ? w.bs_ws + "+" : w.bs_ws)}</td><td>${esc(w.s)}</td><td>${esc(w.ap)}</td><td>${esc(w.d)}</td></tr>`).join("")}</tbody></table></div></div>`;
+    return `<div><div class="sec-h">${type==="ranged"?"Ranged weapons":"Melee weapons"}</div>${rows.map(w => { const kw = w.description ? plain(w.description).split(/\s*,\s*/).filter(Boolean) : [];
+      return `<div class="wpn"><div class="wn">${esc(w.name)}</div><div class="sg6 sm">${box("RNG", /^\d+$/.test(w.range) ? w.range + '"' : (w.range||"Melee"))}${box("A",w.a)}${box(type==="ranged"?"BS":"WS", /^\d$/.test(w.bs_ws) ? w.bs_ws + "+" : w.bs_ws)}${box("S",w.s)}${box("AP",w.ap)}${box("D",w.d)}</div>${kw.length ? `<div class="wkw">${kw.map(k => ruleFor(k) ? `<button class="wtag" data-act="rule" data-k="${esc(k)}">${esc(k)}</button>` : `<span class="wtag">${esc(k)}</span>`).join("")}</div>` : ""}</div>`; }).join("")}</div>`;
   };
   const resolved = ab.map(a => { const g = a.ability_id && D.abilities[a.ability_id]; return { type:a.type||"", name:a.name || (g && g.name) || "", desc:a.description || (g && g.description) || "", param:a.parameter||"", model:a.model||"" }; });
   const core = resolved.filter(a => /core|faction/i.test(a.type) && !/datasheet/i.test(a.type));
