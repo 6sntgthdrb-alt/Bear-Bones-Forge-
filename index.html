@@ -417,6 +417,18 @@ body.themed .banner b, body.themed .fcard b, body.themed .pill.acc, body.themed 
 button.wtag{cursor:pointer}
 @media (max-width:360px){.sbox .sv{font-size:1.1rem}.sg6{gap:4px}}
 .ps .sg6{gap:3px}.ps .sbox{background:#eee;border-color:#bbb;padding:3px}.ps .sbox .sv{font-size:13px;color:#111}.ps .sbox .sl{color:#444}.ps .wpn{padding:4px 0;gap:3px}.ps .wtag{color:#111;border-color:#999;background:none}
+
+/* Stat boxes stand out: darker plate, army-colour top edge, soft shadow */
+:root{--stat-bg:color-mix(in srgb,var(--panel2) 84%,var(--text));--stat-sh:0 2px 6px rgba(40,25,5,.22)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--stat-bg:color-mix(in srgb,var(--panel2) 50%,#000);--stat-sh:0 3px 10px rgba(0,0,0,.55)}}
+:root[data-theme="dark"]{--stat-bg:color-mix(in srgb,var(--panel2) 50%,#000);--stat-sh:0 3px 10px rgba(0,0,0,.55)}
+.sbox{background:var(--stat-bg);border:1px solid color-mix(in srgb,var(--line) 70%,#000);border-top:3px solid var(--accent);box-shadow:var(--stat-sh),inset 0 1px 0 rgba(255,255,255,.05)}
+.sbox .sl{color:var(--acc-text,var(--accent));opacity:.9}
+.sbox .sv{font-size:1.45rem}
+.sg6.sm .sbox{border-top-width:2px}
+.sg6.sm .sbox .sv{font-size:1.05rem}
+.ps .sbox{box-shadow:none;border-top:2px solid #555}
+.sbox.long .sv,.sg6.sm .sbox.long .sv{font-size:.82rem;letter-spacing:-.01em}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -1592,7 +1604,7 @@ function dsBody(id, opt = {}){
   const d = D.ds[id]; if (!d) return "";
   const models = D.models[id] || [], ab = D.abil[id] || [], k = D.kw[id] || [];
   const wg = (D.wg[id] || []).filter(w => !opt.weapons || opt.weapons.has(wStem(w.name)));
-  const box = (l, v, cls = "") => `<div class="sbox${cls}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
+  const box = (l, v, cls = "") => `<div class="sbox${cls}${String(v||"").length > 4 ? " long" : ""}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
   const stats = models.length ? `<div class="statblock">${models.map(m => `${models.length>1?`<div class="mname">${esc(m.name)}</div>`:""}<div class="sg6">${box("M",m.m)}${box("T",m.t)}${box("SV",m.sv)}${box("W",m.w)}${box("LD",m.ld)}${box("OC",m.oc)}</div>`).join("")}</div>
     ${models.filter(m => m.inv_sv && m.inv_sv !== "-").map(m => `<div class="small"><b>Invulnerable save ${esc(/^\d$/.test(m.inv_sv) ? m.inv_sv + "+" : m.inv_sv)}</b>${models.length>1?` (${esc(m.name)})`:""}${m.inv_sv_descr?` · <span class="rich">${sanitize(m.inv_sv_descr)}</span>`:""}</div>`).join("")}` : "";
   const wtable = type => {
@@ -2057,7 +2069,12 @@ document.addEventListener("click", e => {
       if (!l.units.some(x => x.warlord) && D.kwSet[id]?.has("CHARACTER")) u.warlord = true;
       l.units.push(u); saveList(l); toast(`Added ${D.ds[id].name}`);
       if (t.dataset.close) closeSheet("ds");
-      renderPickResults(); render(); const ar = $("#addres"); if (ar && S.addQ) ar.scrollIntoView({block:"nearest"}); break;
+      { const before = $("#addres")?.getBoundingClientRect().top;
+        renderPickResults(); render();
+        /* keep the open add list exactly where it was, so the next tap lands on the same spot */
+        const ar = $("#addres"), m = $("main");
+        if (ar && m && before != null) m.scrollTop += ar.getBoundingClientRect().top - before; }
+      break;
     }
     case "rmunit": { const u = U(); if (!u) break; l.units = l.units.filter(x => x !== u); l.units.forEach(x => { if (x.lead === u.uid) x.lead = null; }); saveList(l); render(); break; }
     case "dupunit": { const u = U(); if (!u) break; if (l.units.filter(x => x.ds === u.ds).length >= maxOf(u.ds)) { toast("That's the maximum for this unit."); break; } const c = { ...JSON.parse(JSON.stringify(u)), uid:uid(), warlord:false, enh:null, lead:null }; l.units.splice(l.units.indexOf(u)+1, 0, c); saveList(l); render(); break; }
