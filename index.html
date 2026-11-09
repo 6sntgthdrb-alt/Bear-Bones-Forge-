@@ -1845,6 +1845,8 @@ function secPanel(g, p){
       + (ps.active.length ? ps.active.map(n => `<div class="actcard">${cardHtml(secByName(n), "Active", false)}
           <div class="row"><button class="btn small" data-act="gsec" data-op="done" data-p="${p}" data-n="${esc(n)}">Achieved</button><button class="btn small" data-act="gsec" data-op="discard" data-p="${p}" data-n="${esc(n)}">Discard</button><button class="btn small" data-act="gsec" data-op="neworders" data-p="${p}" data-n="${esc(n)}">New Orders (1CP)</button></div></div>`).join("") : `<div class="small muted">No active cards.</div>`)
       + `<div class="row"><button class="btn small primary" data-act="gsec" data-op="draw" data-p="${p}"${ps.active.length>=2||(!left && (ps.done.length||ps.gone.length))?" disabled":""}>Draw to 2 cards</button>${!ps.deck.length && !ps.active.length && !ps.done.length ? "" : `<span class="grow"></span><button class="btn small" data-act="gsec" data-op="reset" data-p="${p}">Reshuffle deck</button>`}</div>`
+      + (ps.active.length < 2 ? (() => { const pool = ps.deck.length || ps.done.length || ps.gone.length ? ps.deck : M.secondaries.map(c => c.name).filter(n => !ps.active.includes(n));
+          return pool.length ? `<label class="f" for="gpick${p}">Or pick a specific card${p === 1 ? " (the one your opponent drew)" : ""}<select id="gpick${p}" data-ch="gpick" data-p="${p}"><option value="">Choose a card…</option>${[...pool].sort().map(n => `<option>${esc(n)}</option>`).join("")}</select></label>` : ""; })() : "")
       + (ps.done.length ? `<div class="small muted">Achieved: ${ps.done.map(esc).join(", ")}</div>` : "");
   }
   return `<div class="card stack"><div class="row"><h3 class="grow">${esc(g.names[p])}: secondaries</h3>
@@ -2344,6 +2346,12 @@ document.addEventListener("change", e => {
     if (!u.wg) { u.wg = {}; (u.opts||[]).forEach(l => u.wg[l] = 1); u.opts = []; }
     const v = k === "uwg" ? +t.value : (t.checked ? 1 : 0);
     if (v) u.wg[t.dataset.line] = v; else delete u.wg[t.dataset.line];
+  }
+  else if (k === "gpick") {
+    const g = fixGame(S.game ||= blankGame()), ps = g.ps[+t.dataset.p], n = t.value; if (!n) return;
+    if (!ps.deck.length && !ps.active.length && !ps.done.length && !ps.gone.length) ps.deck = shuffle(M.secondaries.map(c => c.name));
+    ps.deck = ps.deck.filter(x => x !== n); if (ps.active.length < 2 && !ps.active.includes(n)) ps.active.push(n);
+    saveGame(); render(); return;
   }
   else if (k === "gchal") { const g = fixGame(S.game ||= blankGame()); g.chal = t.value; saveGame(); render(); return; }
   else if (k === "glist") { const g = fixGame(S.game ||= blankGame()); g.listId = t.value; saveGame(); render(); return; }
