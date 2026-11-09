@@ -1413,7 +1413,7 @@ function unitCard(l, u, v){
       ${squad.length ? `<div class="wgbox"><div class="sec-h">${lead.length ? "Squad wargear" : "Wargear options"}</div>${squad.map(optHtml).join("")}</div>` : ""}
       <div class="ownrow"><label class="small" for="own-${u.uid}">Models of this unit you own</label><input type="number" inputmode="numeric" min="0" id="own-${u.uid}" class="owninp" data-in="own" data-id="${u.ds}" value="${S.collection[u.ds] ?? ""}" placeholder="–"></div>
       <label class="f" for="nt-${u.uid}">Wargear notes<textarea id="nt-${u.uid}" data-in="unotes" data-u="${u.uid}" placeholder="e.g. 1x plasma pistol, power fist on sergeant">${esc(u.notes||"")}</textarea></label>
-      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}">Datasheet</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
+      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}" data-u="${u.uid}">Datasheet</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
     </div>`;
   } else if (open) {
     body = `<div class="unit-b"><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>`;
@@ -1603,9 +1603,12 @@ function dsBody(id, opt = {}){
     `;
   return html;
 }
-function dsSheet(id, fromPicker){
+function dsSheet(id, fromPicker, uid, all){
   const d = D.ds[id]; if (!d) return;
-  const html = (isLegends(id) ? `<div class="issue">This is a <b>Legends</b> datasheet. It isn't allowed in most matched play events.</div>` : "") + dsBody(id) + `${fromPicker && curList() ? `<button class="btn primary" data-act="add" data-id="${id}" data-close="1">Add to ${esc(curList().name)}</button>` : ""}
+  const l = curList(), u = uid && l ? l.units.find(x => x.uid === uid) : null;
+  const wp = u && !all ? unitWeapons(u) : null;
+  const note = u ? `<div class="row small muted"><span class="grow">${wp ? "Showing only the wargear you picked for this unit." : "Showing all wargear this unit can take."}</span><button class="btn small" data-act="ds" data-id="${id}" data-u="${uid}"${wp ? ` data-all="1"` : ""}>${wp ? "Show all wargear" : "Only my wargear"}</button></div>` : "";
+  const html = (isLegends(id) ? `<div class="issue">This is a <b>Legends</b> datasheet. It isn't allowed in most matched play events.</div>` : "") + note + dsBody(id, wp ? { weapons: wp, compact: true } : {}) + `${fromPicker && curList() ? `<button class="btn primary" data-act="add" data-id="${id}" data-close="1">Add to ${esc(curList().name)}</button>` : ""}
     <div class="credit">Datasheet from Wahapedia</div>`;
   openSheet("ds", d.name, html);
 }
@@ -2036,7 +2039,7 @@ document.addEventListener("click", e => {
     }
     case "rmunit": { const u = U(); if (!u) break; l.units = l.units.filter(x => x !== u); l.units.forEach(x => { if (x.lead === u.uid) x.lead = null; }); saveList(l); render(); break; }
     case "dupunit": { const u = U(); if (!u) break; if (l.units.filter(x => x.ds === u.ds).length >= maxOf(u.ds)) { toast("That's the maximum for this unit."); break; } const c = { ...JSON.parse(JSON.stringify(u)), uid:uid(), warlord:false, enh:null, lead:null }; l.units.splice(l.units.indexOf(u)+1, 0, c); saveList(l); render(); break; }
-    case "ds": dsSheet(t.dataset.id, S.view === "build"); break;
+    case "ds": dsSheet(t.dataset.id, S.view === "build" && !t.dataset.u, t.dataset.u, !!t.dataset.all); break;
     case "addopen": S.addOpen = S.addOpen === t.dataset.v ? null : t.dataset.v; S.addQ = ""; render(); break;
     case "close": closeSheet(t.dataset.kind); if (t.dataset.kind === "coll") render(); break;
     case "share": shareList(); break;
@@ -2286,12 +2289,13 @@ if (!window.claude && location.protocol === "https:") {
 async function loadSiteData(force){
   if (window.claude || !/^https?:$/.test(location.protocol)) return false;
   try {
-    const r = await fetch("data/everything.json", { cache:"no-store" });
+    let r = await fetch("data/everything.json", { cache:"no-store" });
+    if (!r.ok) r = await fetch("data/Everything.json", { cache:"no-store" });
     if (!r.ok) { if (force) toast("No data file found on the site."); return false; }
     const b = await r.json();
     if (b.format !== "listforge-backup") return false;
     const seen = LS.get("siteDataAt", 0);
-    if (!force && D && (b.savedAt||0) <= seen) return false;
+    if (!force && D && (b.savedAt||0) <= seen && (G || !b.glossary)) return false;
     const note = importBackup(b); LS.set("siteDataAt", b.savedAt || Date.now());
     S.dataNote = "Loaded from the site: " + note; render(); return true;
   } catch { if (force) toast("Couldn't load the site's data file."); return false; }
