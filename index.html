@@ -2778,7 +2778,7 @@ function appearanceHtml(){
       <div><div class="sec-h">Text size</div><div class="seg segwrap" role="group" aria-label="Text size">${[["xs","Extra small"],["s","Small"],["m","Normal"],["l","Large"],["xl","Extra large"]].map(([k,t]) => `<button data-act="textsize" data-v="${k}" aria-pressed="${(set.textSize||"m")===k}">${t}</button>`).join("")}</div></div>
       <div>${tog("armyColours", "<b>Army colours</b> — inside a list, the whole app takes on that army's colours", set.armyColours !== false)}
         ${tog("texture", "<b>Background texture</b> — the faint pattern behind everything", set.texture !== false)}
-        ${tog("swipeTabs", "<b>Swipe between tabs</b> — swipe left or right across the page to move to the next tab", set.swipeTabs !== false)}
+        ${tog("swipeTabs", "<b>Swipe between tabs</b> — swipe across the page to move to the next tab; a short flick from the very edge of the screen switches straight away", set.swipeTabs !== false)}
         ${tog("phaseTips", "<b>Phase tips</b> — short reminders for the current phase in Battle mode", set.phaseTips !== false)}
         ${tog("terms", "<b>Tap-able rule words</b> — bold key words like Wound roll or Feel No Pain in rules text; tap one to read the rule", set.terms !== false)}</div>
     </div></details>`;
@@ -3412,6 +3412,7 @@ applyMode();
   const W = 92;
   document.addEventListener("pointerdown", e => {
     const h = e.target.closest(".unit-h"); if (!h || e.button > 0) return;
+    if (e.pointerType === "touch" && S.settings.swipeTabs !== false && (e.clientX < 28 || e.clientX > innerWidth - 28)) return;
     const card = h.parentElement, open = card.classList.contains("swiped");
     st = { x:e.clientX, y:e.clientY, h, card, uid:h.dataset.u, base: open ? -W : 0, dx:0, moving:false };
   });
@@ -3446,25 +3447,29 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     return false; };
   document.addEventListener("touchstart", e => {
     st = null; if (S.settings.swipeTabs === false || e.touches.length !== 1 || $("#sheets").children.length) return;
-    const t = e.touches[0]; if (t.clientX < 24 || t.clientX > innerWidth - 24) return;
+    const t = e.touches[0], edge = t.clientX < 28 ? 1 : t.clientX > innerWidth - 28 ? -1 : 0;
+    // From the very edge: a quick switch that works anywhere (even over cards and text boxes), in the direction away from that edge
+    if (edge) { st = { x:t.clientX, y:t.clientY, t:Date.now(), dx:0, on:false, edge }; return; }
     if (!e.target.closest("#main") || blocked(e.target)) return;
     st = { x:t.clientX, y:t.clientY, t:Date.now(), dx:0, on:false };
   }, { passive:true });
   document.addEventListener("touchmove", e => {
     if (!st) return; const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
-    if (!st.on) { if (Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy) * 1.7) st.on = true; else if (Math.abs(dy) > 12) { st = null; return; } else return; }
+    if (st.edge && Math.sign(dx) !== st.edge && Math.abs(dx) > 8) { st = null; return; }
+    if (!st.on) { if (Math.abs(dx) > (st.edge ? 10 : 16) && Math.abs(dx) > Math.abs(dy) * (st.edge ? 1.2 : 1.7)) st.on = true; else if (Math.abs(dy) > (st.edge ? 20 : 12)) { st = null; return; } else return; }
     st.dx = dx; const i = TAB_ORDER.indexOf(S.view), edge = (dx > 0 && i <= 0) || (dx < 0 && i >= TAB_ORDER.length - 1);
     const m = main(); m.style.transition = "none"; m.style.transform = `translateX(${dx * (edge ? 0.12 : 0.5)}px)`; m.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / innerWidth * (edge ? 0.2 : 0.6)));
   }, { passive:true });
   const end = () => {
     if (!st) return; const s0 = st; st = null; if (!s0.on) return;
     const m = main(), i = TAB_ORDER.indexOf(S.view), next = s0.dx < 0 ? i + 1 : i - 1, fast = Math.abs(s0.dx) / Math.max(1, Date.now() - s0.t) > 0.5;
-    const go = next >= 0 && next < TAB_ORDER.length && (Math.abs(s0.dx) > Math.min(110, innerWidth * 0.22) || (Math.abs(s0.dx) > 50 && fast));
+    const go = next >= 0 && next < TAB_ORDER.length && (s0.edge ? Math.abs(s0.dx) > 36 : (Math.abs(s0.dx) > Math.min(110, innerWidth * 0.22) || (Math.abs(s0.dx) > 50 && fast)));
     if (!go) { m.style.transition = "transform .2s ease, opacity .2s"; m.style.transform = ""; m.style.opacity = ""; return; }
     const dir = s0.dx < 0 ? -1 : 1;
-    m.style.transition = "transform .15s ease-in, opacity .15s"; m.style.transform = `translateX(${dir * 45}%)`; m.style.opacity = "0";
+    const q = s0.edge ? 0.6 : 1;
+    m.style.transition = `transform ${.15 * q}s ease-in, opacity ${.15 * q}s`; m.style.transform = `translateX(${dir * 45}%)`; m.style.opacity = "0";
     setTimeout(() => { goView(TAB_ORDER[next]); m.style.transition = "none"; m.style.transform = `translateX(${-dir * 35}%)`; m.style.opacity = "0";
-      requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s"; m.style.transform = ""; m.style.opacity = ""; })); }, 150);
+      requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = `transform ${.22 * q}s cubic-bezier(.2,.8,.2,1), opacity ${.22 * q}s`; m.style.transform = ""; m.style.opacity = ""; })); }, 150 * q);
   };
   document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st && st.on) { const m = main(); m.style.transition = "transform .2s"; m.style.transform = ""; m.style.opacity = ""; } st = null; });
 })();
