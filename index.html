@@ -802,6 +802,79 @@ nav.tabs.scrubbing .tabind::before{width:70%;height:4px}
 .rtabs.scrubbing{touch-action:none;-webkit-user-select:none;user-select:none}
 .rtabs.scrubbing button{opacity:.6}
 .rtabs button.scrubhover{opacity:1 !important;transform:scale(1.08)}
+.dspage{display:flex;flex-direction:column;gap:12px}
+.dsp-h{display:flex;align-items:center;gap:12px;padding:4px 0 10px;border-bottom:1px solid var(--line)}
+.dsp-back{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:1.6rem;line-height:1;color:var(--accent);display:grid;place-items:center;flex:none}
+.dsp-k{font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--acc-text,var(--accent))}
+.dsp-t{margin:2px 0 0;font-size:1.5rem;line-height:1.15}
+.dsp-pts{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:64px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.dsp-pts b{font-size:1.4rem;color:var(--acc-text,var(--accent))}.dsp-pts span{font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
+.dspage .unit{border:0;background:none;box-shadow:none;padding:0}
+.dspage .unit > .unit-h{display:none}
+.dspage .unit > .swipedel{display:none}
+.dspage .unit-b{padding:0;border:0}
+.dsp-hint{text-align:center;padding:8px 0 4px}
+.fcard .femb{position:absolute;top:8px;right:8px;width:46px;height:46px;display:grid;place-items:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.7))}
+.fcard .femb img,.fcard .femb svg{width:100%;height:100%;object-fit:contain}
+.fcard .fname{max-width:calc(100% - 52px)}
+
+/* ===================== Clean: the one app style (accent colour is chosen in Settings) ===================== */
+:root[data-style="clean"]{--bg-b:#f3f4f6;--panel-b:#ffffff;--panel2-b:#eef0f3;--line-b:#dfe2e8;--text:#111317;--muted-b:#6b7280;--accent:#0f7fb3;--trim:var(--accent);--style-acc:#0f7fb3;--on-accent:#fff;
+  --display:"Barlow Semi Condensed","Barlow",system-ui,sans-serif;--body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;--r:14px;--r-sm:10px;--tex-opacity:0;--shade:rgba(15,20,30,.06);color-scheme:light;
+  --stat-bg:var(--panel2);--stat-sh:none}
+@media (prefers-color-scheme:dark){:root[data-style="clean"]:not([data-theme="light"]){--bg-b:#050506;--panel-b:#111113;--panel2-b:#19191c;--line-b:#26262b;--text:#f2f3f5;--muted-b:#8d929b;--accent:#38b6e8;--style-acc:#38b6e8;--on-accent:#04121a;--shade:rgba(0,0,0,.5);color-scheme:dark;--stat-bg:#0c0c0e}}
+:root[data-style="clean"][data-theme="dark"]{--bg-b:#050506;--panel-b:#111113;--panel2-b:#19191c;--line-b:#26262b;--text:#f2f3f5;--muted-b:#8d929b;--accent:#38b6e8;--style-acc:#38b6e8;--on-accent:#04121a;--shade:rgba(0,0,0,.5);color-scheme:dark;--stat-bg:#0c0c0e}
+[data-style="clean"] body.themed{--bg:color-mix(in srgb,var(--accent) 2%,var(--bg-b));--panel:color-mix(in srgb,var(--accent) 4%,var(--panel-b));--panel2:color-mix(in srgb,var(--accent) 7%,var(--panel2-b));--line:color-mix(in srgb,var(--accent) 22%,var(--line-b));--muted:var(--muted-b)}
+[data-style="clean"] body::before{display:none}
+[data-style="clean"] h1,[data-style="clean"] h2,[data-style="clean"] h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-transform:none}
+[data-style="clean"] header.top{border-bottom:1px solid var(--line);box-shadow:none}
+[data-style="clean"] nav.tabs{border-top:1px solid var(--line);background:var(--bg)}
+[data-style="clean"] nav.tabs button{font:600 .7rem var(--body);letter-spacing:.14em;text-transform:uppercase}
+[data-style="clean"] .brand h1{font:700 1.05rem var(--display);letter-spacing:.12em;text-transform:uppercase}
+[data-style="clean"] .sec-h,[data-style="clean"] .group-h,[data-style="clean"] label.f{font:600 .74rem var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+[data-style="clean"] .sec-h{border-bottom:0;padding-bottom:0}
+[data-style="clean"] label.f > input,[data-style="clean"] label.f > select,[data-style="clean"] label.f > textarea,[data-style="clean"] label.f > .row{font:400 1rem var(--body);letter-spacing:0;text-transform:none;color:var(--text)}
+[data-style="clean"] .card,[data-style="clean"] .sect,[data-style="clean"] .mcard,[data-style="clean"] .detbox,[data-style="clean"] .strat{border:1px solid var(--line);border-radius:var(--r);box-shadow:none;background:var(--panel)}
+[data-style="clean"] .sect{background:transparent;border:0;padding:4px 0}
+[data-style="clean"] .sect-h{border:0;padding:6px 2px;margin:0;background:none}
+[data-style="clean"] .sect-h h3{font:600 .82rem var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--text);display:flex;align-items:center;gap:10px}
+[data-style="clean"] .sect-h h3::before{content:"";display:block;width:4px;height:16px;border-radius:2px;transform:none;background:var(--accent)}
+[data-style="clean"] .unit{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:var(--r);box-shadow:none}
+[data-style="clean"] .unit.warlord{border-left-color:var(--accent2,var(--accent))}
+[data-style="clean"] .unit-h .nm{font:600 1.08rem var(--display);letter-spacing:.01em;text-transform:none}
+[data-style="clean"] .btn{border-radius:12px;background:var(--panel2);border:1px solid var(--line);box-shadow:none;font-weight:600;letter-spacing:.02em}
+[data-style="clean"] .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);box-shadow:none}
+[data-style="clean"] .btn.danger{color:var(--err)}
+[data-style="clean"] .seg{border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+[data-style="clean"] .seg button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 22%,var(--panel2));color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent)}
+[data-style="clean"] .pill{border-radius:8px;letter-spacing:.06em}
+[data-style="clean"] .pill.acc{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--acc-text,var(--accent));border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+[data-style="clean"] .sbox{background:var(--stat-bg);border:1px solid var(--line);border-top:1px solid var(--line);border-radius:12px;box-shadow:none}
+[data-style="clean"] .sbox .sl{color:var(--muted);letter-spacing:.14em}
+[data-style="clean"] .sbox .sv{font-family:var(--display);font-weight:600}
+[data-style="clean"] .dsfold > summary.sec-h,[data-style="clean"] details.fold > summary.sec-h{background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--text);padding:12px 2px}
+[data-style="clean"] .dsfold > summary.sec-h::after,[data-style="clean"] .fold > summary.sec-h::after{color:var(--accent)}
+[data-style="clean"] input[type=text],[data-style="clean"] input[type=search],[data-style="clean"] input[type=number],[data-style="clean"] select,[data-style="clean"] textarea{border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+[data-style="clean"] .banner{border-radius:var(--r)}
+[data-style="clean"] .listitem{border-radius:var(--r)}
+.acccard{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--panel);cursor:pointer;color:var(--text)}
+.acccard b{display:block;font-size:1.05rem}.acccard .small{display:block}
+.acccard[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--panel))}
+.accsw{width:30px;height:30px;border-radius:8px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.acctick{color:var(--accent);font-size:1.3rem;font-weight:700}
+.accchips{display:flex;flex-wrap:wrap;gap:8px}
+.accchip{display:inline-flex;align-items:center;gap:8px;padding:8px 14px 8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:.92rem;cursor:pointer}
+.accchip[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--panel))}
+.accdot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}
+.accpick{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:14px}
+.accwheel{position:relative;width:min(280px,72vw);aspect-ratio:1;touch-action:none}
+.accwheel canvas{width:100%;height:100%;border-radius:50%;display:block;cursor:crosshair}
+.accmark{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.5);pointer-events:none}
+#accv{-webkit-appearance:none;appearance:none;width:100%;max-width:420px;height:34px;border-radius:999px;background:linear-gradient(90deg,#000,var(--accv-c,#2f8c2e));border:1px solid var(--line);outline:none}
+#accv::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:30px;border-radius:10px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.5)}
+#accv::-moz-range-thumb{width:22px;height:30px;border-radius:10px;background:#fff;border:0}
+[data-style="clean"] .dspage .unit{border:0;background:none;box-shadow:none;border-radius:0}
+[data-style="clean"] .unit-edit > summary{font:600 .78rem var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-text,var(--accent));border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body data-army="">
@@ -1632,6 +1705,25 @@ const ALLEG_FONTS = {
 };
 function lum(hex){ const n = parseInt(hex.slice(1),16); const ch = [n>>16, n>>8&255, n&255].map(v => { v/=255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*ch[0] + .7152*ch[1] + .0722*ch[2]; }
 const flair0 = () => S.settings.armyColours !== false;
+/* Accent colour chosen in Settings: Automatic (the army you're using), a faction's colour, or any custom colour. */
+const FACTION_LABEL = { SM:"Space Marines", AC:"Adeptus Custodes", AS:"Adepta Sororitas", AM:"Astra Militarum", AdM:"Adeptus Mechanicus", GK:"Grey Knights", QI:"Imperial Knights", AoI:"Imperial Agents", TL:"Adeptus Titanicus",
+  CSM:"Chaos Space Marines", DG:"Death Guard", TS:"Thousand Sons", WE:"World Eaters", EC:"Emperor's Children", CD:"Chaos Daemons", QT:"Chaos Knights", NEC:"Necrons", ORK:"Orks", TYR:"Tyranids", GC:"Genestealer Cults", AE:"Aeldari", DRU:"Drukhari", TAU:"T'au Empire", LoV:"Leagues of Votann" };
+function accentChoices(){ return Object.keys(ACCENT).map(k => ({ k, name: FACTION_LABEL[k] || k.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), hex: ACCENT[k] })).sort((a, b) => a.name.localeCompare(b.name)); }
+function hsv2hex(h, s, v){ const f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); }; return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join(""); }
+function hex2hsv(hex){ const n = parseInt(hex.slice(1), 16), r = (n >> 16) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0; if (d) h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; return { h, s: mx ? d / mx : 0, v: mx }; }
+function applyAccent(army){
+  S.themeArmy = army; applyTheme(army);
+  const A = S.settings.accent || {};
+  const acc = A.mode === "custom" && /^#[0-9a-f]{6}$/i.test(A.hex || "") ? A.hex : A.mode === "faction" && A.key && ACCENT[A.key] ? ACCENT[A.key] : null;
+  if (!acc) return;
+  const b = document.body.style, key = A.mode === "faction" ? A.key : null;
+  b.setProperty("--accent", acc); b.setProperty("--army-acc", acc); b.setProperty("--trim", key && (TRIM[key] || TRIM[fidOf(key)]) || acc);
+  b.setProperty("--on-accent", lum(acc) > .4 ? "#14110a" : "#fff");
+  b.setProperty("--acc-text-d", shadeTo(acc, .2, true)); b.setProperty("--acc-text-l", shadeTo(acc, .09, false));
+  const a2 = key && ACCENT2[key]; if (a2) b.setProperty("--accent2", a2); else b.removeProperty("--accent2");
+  document.body.classList.add("themed");
+}
 function applyTheme(army){
   const b = document.body.style;
   if (!army) { ["--accent","--accent2","--army-acc","--trim","--on-accent","--tex","--army-title","--army-head","--banner-pat","--acc-text-d","--acc-text-l"].forEach(v => b.removeProperty(v)); delete document.body.dataset.alleg; document.body.classList.remove("themed"); return; }
@@ -1640,7 +1732,7 @@ function applyTheme(army){
   const al = allegOf(army), F = ALLEG_FONTS[al];
   b.setProperty("--army-acc", acc);
   const a2 = ACCENT2[chapterOf(army)] || ACCENT2[fidOf(army)]; if (a2 && flair0()) b.setProperty("--accent2", a2); else b.removeProperty("--accent2");
-  const flair = S.settings.armyColours !== false;
+  const flair = true;
   if (flair) { b.setProperty("--accent", acc); b.setProperty("--trim", trim); b.setProperty("--on-accent", lum(acc) > .4 ? "#1a1408" : "#fff"); }
   else ["--accent","--trim","--on-accent"].forEach(v => b.removeProperty(v));
   b.setProperty("--tex", tex); b.setProperty("--banner-pat", tex);
@@ -1785,11 +1877,12 @@ function armyCount(key){ return Object.keys(D.ds).filter(id => eligible(id, key)
 function openArmyPicker(){
   const groups = armyOptions();
   openSheet("armies", "Choose an army", groups.map(([g, opts]) => `<div class="sec-h">${esc(g)}</div><div class="fgrid">${opts.map(o => `<button class="fcard" data-act="pickarmy" data-army="${esc(o.key)}" style="--accent:${accentOf(o.key)};background-image:url(${sceneImage(o.key)})">
-      <span class="fname">${esc(o.name)}</span><span class="fcount">${armyCount(o.key)} datasheets</span></button>`).join("")}</div>`).join(""));
+      <span class="femb" aria-hidden="true">${emblem(o.key)}</span><span class="fname">${esc(o.name)}</span><span class="fcount">${armyCount(o.key)} datasheets</span></button>`).join("")}</div>`).join(""));
 }
 
 /* ============ rendering ============ */
 const SVG = {
+  back:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   chev:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>',
   down:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>',
   trash:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
@@ -1821,14 +1914,14 @@ function render(){
   const l = curList();
   const gl = S.view === "game" && S.game && S.game.listId && S.lists.find(x => x.id === S.game.listId);
   const ra = S.view === "rules" && !l ? S.rulesArmy : S.view === "game" && gl ? gl.army : (l ? l.army : null);
-  applyTheme(ra);
+  applyAccent(ra);
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
   tabInd(TAB_ORDER.indexOf(S.view), true);
   renderTop();
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
   window.scrollTo(0, st);
-  fitStats(m); measureBars(); if (S.view === "rules") showRTab(false, true);
+  fitStats(m); measureBars(); if (S.view === "rules") showRTab(false, true); if (S.view === "data") drawAccWheel();
 }
 function measureBars(){ const t = $("#top"), n = document.querySelector("nav.tabs"); const r = document.documentElement.style;
   if (t) r.setProperty("--toph", t.offsetHeight + "px"); if (n) r.setProperty("--navh", n.offsetHeight + "px"); }
@@ -1890,7 +1983,27 @@ function armyResHtml(l){
   const r = searchIds(l.army, q), ids = r.ids.slice(0, 40);
   return `<div class="adddrop">${dsRows(ids, true, r.hints)}${r.ids.length > 40 ? `<div class="small muted" style="padding:6px 0">${r.ids.length - 40} more. Type a bit more to narrow it down.</div>` : ""}</div>`;
 }
-function viewBuild(){ return buildWrap(viewBuild0()); }
+function viewBuild(){ const l = curList(); if (S.dsPage && l && D && l.units.some(u => u.uid === S.dsPage)) return dsPageHtml(l); S.dsPage = null; return buildWrap(viewBuild0()); }
+/* ---- Unit page (Build only): a full page for one unit; back button or swipe right returns to the list where you were ---- */
+function openDsPage(uid){ S.dsReturn = window.scrollY; S.dsPage = uid; render(); window.scrollTo(0, 0);
+  const m = $("#main"); m.style.transition = "none"; m.style.transform = "translateX(30%)"; m.style.opacity = "0";
+  requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .24s cubic-bezier(.2,.8,.2,1), opacity .2s"; m.style.transform = ""; m.style.opacity = ""; })); }
+function closeDsPage(fromSwipe){ const m = $("#main"), y = S.dsReturn || 0, back = () => { S.dsPage = null; render(); window.scrollTo(0, y);
+    m.style.transition = "none"; m.style.transform = "translateX(-12%)"; m.style.opacity = ".3";
+    requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .22s cubic-bezier(.2,.8,.2,1), opacity .2s"; m.style.transform = ""; m.style.opacity = ""; })); };
+  if (fromSwipe) { m.style.transition = "transform .16s ease-in, opacity .16s"; m.style.transform = "translateX(60%)"; m.style.opacity = "0"; setTimeout(back, 150); } else back(); }
+function dsPageHtml(l){
+  const u = l.units.find(x => x.uid === S.dsPage), d = D.ds[u.ds], v = validate(l);
+  const had = S.open.has(u.uid); S.open.add(u.uid); const card = unitCard(l, u, v); if (!had) S.open.delete(u.uid);
+  const role = groupOf(u.ds, l.army);
+  return `<div class="dspage">
+    <div class="dsp-h"><button class="iconbtn dsp-back" data-act="dsback" aria-label="Back to the list">${SVG.back || "‹"}</button>
+      <div class="grow"><div class="dsp-k">${esc(catLabel(role, l.army))}</div><h2 class="dsp-t">${esc(unitLabel(l, u))}</h2><div class="small muted">${unitModels(u)} model${unitModels(u) === 1 ? "" : "s"}${u.lead && l.units.find(x => x.uid === u.lead) ? " · leading " + esc(unitLabel(l, l.units.find(x => x.uid === u.lead))) : ""}</div></div>
+      <div class="dsp-pts"><b class="num">${unitCost(u) + enhCost(u)}</b><span>pts</span></div></div>
+    ${card}
+    <div class="small muted dsp-hint">Swipe right or tap ‹ to go back to your list.</div>
+  </div>`;
+}
 /* Group the Build page into settings (a), units (u) and notes (z) so tablets can show them side by side. */
 function buildWrap(h){ if (!/^\s*<div class="stack">/.test(h)) return h;
   const iu = h.indexOf("<!--U-->"), iz = h.indexOf("<!--Z-->"); if (iu < 0 || iz < 0) return h;
@@ -1991,7 +2104,7 @@ function unitCard(l, u, v){
       <div class="ownrow"><label class="small" for="own-${u.uid}">Models of this unit you own</label><input type="number" inputmode="numeric" min="0" id="own-${u.uid}" class="owninp" data-in="own" data-id="${u.ds}" value="${S.collection[u.ds] ?? ""}" placeholder="–"></div>
       <label class="f" for="nt-${u.uid}">Wargear notes<textarea id="nt-${u.uid}" data-in="unotes" data-u="${u.uid}" placeholder="e.g. 1x plasma pistol, power fist on sergeant">${esc(u.notes||"")}</textarea></label>
       </div></details>
-      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}" data-u="${u.uid}">Full screen</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
+      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}" data-u="${u.uid}" data-all="1">Full datasheet</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
     </div>`;
   } else if (open) {
     body = `<div class="unit-b"><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>`;
@@ -2796,14 +2909,24 @@ function appearanceHtml(){
       <div class="sp-c" style="background:${p.panel};border-color:${p.line};border-radius:${p.round?"9px":"2px"}"><span class="sp-b" style="background:${p.acc}"></span><span style="font-family:${p.font}">Intercessors</span><b style="margin-left:auto;color:${p.acc}">80</b></div></div>
       <div class="sl"><b>${esc(st.name)}</b><span class="muted">${esc(st.desc)}</span></div></button>`; };
   const tog = (k, label, on) => `<label class="check"><input type="checkbox" data-ch="look" data-k="${k}"${on?" checked":""}><span>${label}</span></label>`;
-  return `<details class="card" open><summary><h3 style="display:inline">Appearance</h3> <span class="small muted">${esc((STYLES.find(x=>x.k===cur)||STYLES[0]).name)}</span></summary>
+  const A = set.accent || { mode:"auto" }, cust = A.hex || "#2f8c2e", hsv = A.hsv || hex2hsv(cust);
+  const accCard = (mode, title, sub, sw) => `<button class="acccard" data-act="accmode" data-v="${mode}" aria-pressed="${(A.mode || "auto") === mode}"><span class="accsw" style="background:${sw}"></span><span class="grow"><b>${title}</b><span class="muted small">${sub}</span></span>${(A.mode || "auto") === mode ? `<span class="acctick">✓</span>` : ""}</button>`;
+  return `<details class="card" open><summary><h3 style="display:inline">Appearance</h3> <span class="small muted">${A.mode === "custom" ? "Custom colour" : A.mode === "faction" ? esc((accentChoices().find(x => x.k === A.key) || {}).name || "Faction colour") : "Automatic colour"}</span></summary>
     <div class="stack" style="margin-top:10px">
-      <div class="stylegrid">${STYLES.map(card).join("")}</div>
       <div><div class="sec-h">Light or dark</div><div class="seg" role="group" aria-label="Light or dark">${[["auto","Match my device"],["light","Light"],["dark","Dark"]].map(([k,t]) => `<button data-act="mode" data-v="${k}" aria-pressed="${S.mode===k}"${st0.forced?" disabled":""}>${t}</button>`).join("")}</div>${st0.forced?`<div class="small muted" style="margin-top:4px">${esc(st0.name)} is always ${st0.forced}.</div>`:""}</div>
       <div><div class="sec-h">Text size</div><div class="seg segwrap" role="group" aria-label="Text size">${[["xs","Extra small"],["s","Small"],["m","Normal"],["l","Large"],["xl","Extra large"]].map(([k,t]) => `<button data-act="textsize" data-v="${k}" aria-pressed="${(set.textSize||"m")===k}">${t}</button>`).join("")}</div></div>
-      <div>${tog("armyColours", "<b>Army colours</b> — inside a list, the whole app takes on that army's colours", set.armyColours !== false)}
-        ${tog("texture", "<b>Background texture</b> — the faint pattern behind everything", set.texture !== false)}
-        ${tog("swipeTabs", "<b>Swipe between tabs</b> — swipe across the page to move to the next tab; a short flick from the very edge of the screen switches straight away", set.swipeTabs !== false)}
+      <div><div class="sec-h">Accent colour</div>
+        ${accCard("auto", "Automatic", "Match the army you're using", "linear-gradient(135deg,#c0262f,#2b6b3c 50%,#2a5db0)")}
+        <div class="sec-h" style="margin-top:14px">Faction colours</div>
+        <div class="accchips">${accentChoices().map(c => `<button class="accchip" data-act="accfac" data-k="${esc(c.k)}" aria-pressed="${A.mode === "faction" && A.key === c.k}"><span class="accdot" style="background:${c.hex}"></span>${esc(c.name)}</button>`).join("")}</div>
+        <div class="sec-h" style="margin-top:14px">Custom colour</div>
+        ${accCard("custom", "Custom", "Pick any colour with the wheel below", cust)}
+        <div class="accpick">
+          <div class="accwheel" id="accwheelbox"><canvas id="accwheel" width="560" height="560" aria-label="Colour wheel"></canvas><span class="accmark" id="accmark"></span></div>
+          <input type="range" id="accv" data-in="accv" min="5" max="100" value="${Math.round(hsv.v * 100)}" aria-label="Brightness" style="--accv-c:${hsv2hex(hsv.h, hsv.s, 1)}">
+          <div class="row" style="justify-content:center;gap:10px"><span class="accsw" id="accsw" style="background:${cust}"></span><input type="text" id="acchex" data-in="acchex" value="${cust.toUpperCase()}" maxlength="7" autocomplete="off" spellcheck="false" aria-label="Colour code" style="max-width:130px;text-align:center;font-family:ui-monospace,Menlo,monospace"></div>
+        </div></div>
+      <div>${tog("swipeTabs", "<b>Swipe between tabs</b> — swipe across the page to move to the next tab; a short flick from the very edge of the screen switches straight away", set.swipeTabs !== false)}
         ${tog("phaseTips", "<b>Phase tips</b> — short reminders for the current phase in Battle mode", set.phaseTips !== false)}
         ${tog("terms", "<b>Tap-able rule words</b> — bold key words like Wound roll or Feel No Pain in rules text; tap one to read the rule", set.terms !== false)}</div>
     </div></details>`;
@@ -3029,7 +3152,8 @@ document.addEventListener("click", e => {
     }
     case "toggle": {
       if (S.justSwiped) { S.justSwiped = false; break; }
-      if (S.swipeOpen) { S.swipeOpen = null; render(); break; } const id = t.dataset.u; S.open.has(id) ? S.open.delete(id) : S.open.add(id); render(); break; }
+      if (S.swipeOpen) { S.swipeOpen = null; render(); break; } openDsPage(t.dataset.u); break; }
+    case "dsback": closeDsPage(); break;
     case "picker": openPicker(); break;
     case "add": {
       if (!l) break;
@@ -3057,6 +3181,8 @@ document.addEventListener("click", e => {
     case "sharefmt": S.shareFmt = t.dataset.v; shareList(); break;
     case "usizemin": case "usizemax": { const l2 = curList(), u = l2 && l2.units.find(x => x.uid === t.dataset.u); if (!u) break; const rows = costRows(u.ds); if (!rows.length) break; u.line = (act === "usizemin" ? rows[0] : rows[rows.length-1]).line; saveList(l2); render(); break; }
     case "collection": { const l2 = curList(); openCollection(l2 ? l2.army : S.rulesArmy); break; }
+    case "accmode": { const A = S.settings.accent || {}; A.mode = t.dataset.v; if (A.mode === "custom" && !A.hex) { A.hex = "#2f8c2e"; A.hsv = hex2hsv(A.hex); } S.settings.accent = A; LS.set("settings", S.settings); render(); break; }
+    case "accfac": { const A = S.settings.accent || {}; A.mode = "faction"; A.key = t.dataset.k; S.settings.accent = A; LS.set("settings", S.settings); render(); break; }
     case "mode": S.mode = t.dataset.v; LS.set("mode", S.mode); applyMode(); render(); break;
     case "style": S.settings.style = t.dataset.v; LS.set("settings", S.settings); applyMode(); render(); break;
     case "textsize": S.settings.textSize = t.dataset.v; LS.set("settings", S.settings); applyMode(); render(); break;
@@ -3202,6 +3328,8 @@ document.addEventListener("input", e => {
   else if (k === "collq") { S.collQ = t.value; renderCollection(); }
   else if (k === "pickq") { S.pickQ = t.value; renderPickResults(); }
   else if (k === "shareopt" && t.type !== "checkbox") { S.shareOpt = Object.assign(shareOpts(), { [t.dataset.k]: t.value }); LS.set("shareOpt", S.shareOpt); clearTimeout(S.shT); S.shT = setTimeout(() => { const l2 = curList(); if (!l2) return; const txt = exportText(l2, S.shareFmt); const parts = shareOpts().discord ? splitDiscord(txt) : [txt]; if (parts.length === (S.shareParts||[]).length) { S.shareParts = parts; parts.forEach((p2, i) => { const ta = $("#sharetext" + (i ? i : "")); if (ta) ta.value = p2; }); } else { S.shareOptsOpen = true; shareList(); } }, 300); return; }
+  else if (k === "accv") { const A = S.settings.accent || {}, h = A.hsv || hex2hsv(A.hex || "#2f8c2e"); h.v = num(t.value) / 100; setCustomAccent(h); return; }
+  else if (k === "acchex") { let v = t.value.trim(); if (!v.startsWith("#")) v = "#" + v; if (/^#[0-9a-f]{6}$/i.test(v)) setCustomAccent(hex2hsv(v.toLowerCase()), true); return; }
   else if (k === "bdist") { S.bdist = t.value; const el = $("#bdistres"), l2 = briefList(); if (el && l2) el.innerHTML = reachHtml(l2, t.value); }
   else if (k === "coreq") { S.coreQ = t.value; ["#coreres", "#gcoreres"].forEach(id => { const el = $(id); if (el) el.innerHTML = coreRefHtml(t.value); }); }
   else if (k === "armyq") { S.armyQ = t.value; const el = $("#armyres"); if (el && l) el.innerHTML = armyResHtml(l); }
@@ -3404,15 +3532,7 @@ async function loadSiteData(force){
 }
 
 const STYLES = [
-  { k:"forge", name:"Iron Forge", desc:"Gunmetal, brass edges, stencil headings", fonts:"family=Black+Ops+One&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700", pv:{ bg:"#16191c", panel:"#22272c", line:"#3a4148", text:"#d9dcdf", acc:"#c9a24a", font:'"Black Ops One",sans-serif' } },
-  { k:"ceramite", name:"Ceramite Armour", desc:"Smooth plates in your army's colour", fonts:"family=Rajdhani:wght@500;600;700", pv:{ bg:"#202326", panel:"#2c3034", line:"#3a3f44", text:"#eef0f2", acc:"#2a7a4a", font:'"Rajdhani",sans-serif', round:true } },
-  { k:"terminal", name:"Cogitator Terminal", desc:"Green-on-black data-slate, always dark", fonts:"family=VT323&family=IBM+Plex+Mono:wght@400;500;600", forced:"dark", pv:{ bg:"#030805", panel:"#030805", line:"#2c8a44", text:"#6dff8f", acc:"#6dff8f", font:'"VT323",monospace' } },
-  { k:"dossier", name:"Imperial Dossier", desc:"Inquisition file, typewriter, red stamps", fonts:"family=Special+Elite&family=Courier+Prime:wght@400;700", pv:{ bg:"#e9dcb8", panel:"#f4ead0", line:"#b9a774", text:"#2b2416", acc:"#a8261e", font:'"Special Elite",monospace' } },
-  { k:"hud", name:"Tactical HUD", desc:"Sharp, techy, auspex-screen feel", fonts:"family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600;700", pv:{ bg:"#0a1017", panel:"#101a24", line:"#22384b", text:"#d8e6f2", acc:"#2ec4b6", font:'"Chakra Petch",sans-serif' } },
-  { k:"modern", name:"Clean Modern", desc:"Soft cards, rounded, easy reading", fonts:"family=Manrope:wght@400;500;600;700;800", pv:{ bg:"#f3f4f7", panel:"#ffffff", line:"#e0e3e9", text:"#16181d", acc:"#4f46e5", font:'"Manrope",sans-serif', round:true } },
-  { k:"datasheet", name:"Datasheet", desc:"Bold header bars like a printed datasheet", fonts:"family=Oswald:wght@500;600;700&family=Roboto+Condensed:wght@400;500;700", pv:{ bg:"#e7e7e3", panel:"#ffffff", line:"#c9c9c2", text:"#111111", acc:"#9e2b20", font:'"Oswald",sans-serif', bar:true } },
-  { k:"parchment", name:"Parchment Scroll", desc:"Aged paper, ink and oxblood", fonts:"family=EB+Garamond:wght@400;500;600;700&family=IM+Fell+English+SC", pv:{ bg:"#e6d6b0", panel:"#f2e5c4", line:"#b6995d", text:"#2b1d0e", acc:"#7b2d1a", font:'"IM Fell English SC",serif' } },
-  { k:"void", name:"Void Black", desc:"True black, amber highlights, always dark", fonts:"family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700", forced:"dark", pv:{ bg:"#000000", panel:"#0b0b0d", line:"#26262b", text:"#f4f4f5", acc:"#f5a524", font:'"IBM Plex Sans Condensed",sans-serif' } }
+  { k:"clean", name:"Clean", desc:"Smooth and simple; pick any colour below", fonts:"family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700", pv:{ bg:"#050506", panel:"#121214", line:"#26262b", text:"#f2f3f5", acc:"#38b6e8", font:'"Barlow Semi Condensed",sans-serif', round:true } }
 ];
 const TEXT_SIZES = { xs:13.5, s:15, m:16, l:17.5, xl:19 };
 function loadStyleFonts(st){
@@ -3461,12 +3581,12 @@ applyMode();
 })();
 
 /* ============ swipe across the page to move between the bottom tabs ============ */
-function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.confirmGame = false; render(); window.scrollTo(0, 0); }
+function goView(v){ if (v !== "build") S.dsPage = null; S.view = v; LS.set("view", S.view); S.confirmDel = null; S.confirmGame = false; render(); window.scrollTo(0, 0); }
 (function(){
   let st = null;
   const main = () => $("#main");
   const blocked = el => { for (let n = el; n && n !== document.body; n = n.parentElement) {
-      if (n.matches && n.matches(".unit-h,input,textarea,select,[data-noswipe],.sheet-bg,.swipedel")) return true;
+      if (n.matches && n.matches(".unit-h,input,textarea,select,[data-noswipe],.sheet-bg,.swipedel,.accwheel")) return true;
       const cs = getComputedStyle(n); if ((cs.overflowX === "auto" || cs.overflowX === "scroll") && n.scrollWidth > n.clientWidth + 2) return true; }
     return false; };
   document.addEventListener("touchstart", e => {
@@ -3483,6 +3603,7 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     if (st.edge && Math.sign(dx) !== st.edge && Math.abs(dx) > 8) { st = null; return; }
     if (!st.on) { if (Math.abs(dx) > (st.edge ? 10 : 16) && Math.abs(dx) > Math.abs(dy) * (st.edge ? 1.2 : 1.7)) st.on = true; else if (Math.abs(dy) > (st.edge ? 20 : 12)) { st = null; return; } else return; }
     st.dx = dx; const i = TAB_ORDER.indexOf(S.view), ri = RULE_TABS.indexOf(S.rulesTab);
+    if (S.view === "build" && S.dsPage) { const m = main(); m.style.transition = "none"; m.style.transform = `translateX(${dx > 0 ? dx * 0.7 : dx * 0.1}px)`; m.style.opacity = String(1 - Math.min(0.4, Math.max(0, dx) / innerWidth * 0.6)); return; }
     const inRules = S.view === "rules" && !st.edge && ri >= 0 && !((dx > 0 && ri <= 0) || (dx < 0 && ri >= RULE_TABS.length - 1));
     const edge = !inRules && ((dx > 0 && i <= 0) || (dx < 0 && i >= TAB_ORDER.length - 1));
     if (!inRules) tabInd(i + Math.max(edge ? -0.08 : -1, Math.min(edge ? 0.08 : 1, -dx / Math.max(160, innerWidth * 0.5))), false); else tabInd(i, false);
@@ -3491,6 +3612,10 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
   const end = () => {
     if (!st) return; const s0 = st; st = null; if (!s0.on) return;
     const m = main(), i = TAB_ORDER.indexOf(S.view), next = s0.dx < 0 ? i + 1 : i - 1, fast = Math.abs(s0.dx) / Math.max(1, Date.now() - s0.t) > 0.5;
+    if (S.view === "build" && S.dsPage) {
+      const back = s0.dx > 0 && (s0.edge ? s0.dx > 36 : (s0.dx > Math.min(110, innerWidth * 0.22) || (s0.dx > 50 && fast)));
+      if (back) closeDsPage(true); else { m.style.transition = "transform .2s ease, opacity .2s"; m.style.transform = ""; m.style.opacity = ""; }
+      tabInd(i, true); return; }
     const ri = RULE_TABS.indexOf(S.rulesTab), nr = s0.dx < 0 ? ri + 1 : ri - 1;
     let act = null, mainMove = false;
     if (S.view === "rules" && !s0.edge && ri >= 0 && nr >= 0 && nr < RULE_TABS.length) act = () => goRules(RULE_TABS[nr]);
@@ -3572,6 +3697,39 @@ document.addEventListener("scroll", e => { if (e.target && e.target.classList &&
       if (Math.abs(ev.touches[0].clientX - sc.sx0) > 8 || Math.abs(ev.touches[0].clientY - sc.y) > 8) { clearTimeout(sc.timer); sc = null; node.removeEventListener("touchmove", cancelIfScroll); } };
     node.addEventListener("touchmove", cancelIfScroll, { passive:true });
   }, { passive:true });
+})();
+
+/* ============ custom accent: colour wheel (hue around, strength outwards) + brightness slider ============ */
+function drawAccWheel(){
+  const c = $("#accwheel"); if (!c) return; const x = c.getContext("2d"), W = c.width, R = W / 2, A = S.settings.accent || {}, hsv = A.hsv || hex2hsv(A.hex || "#2f8c2e");
+  const v = Math.max(.35, hsv.v), im = x.createImageData(W, W), d = im.data;
+  for (let py = 0; py < W; py++) for (let px = 0; px < W; px++) {
+    const dx = px - R, dy = py - R, r = Math.hypot(dx, dy), i = (py * W + px) * 4; if (r > R) { d[i + 3] = 0; continue; }
+    const h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, s = r / R, f = n => { const k = (n + h / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
+    d[i] = f(5) * 255; d[i + 1] = f(3) * 255; d[i + 2] = f(1) * 255; d[i + 3] = r > R - 1.5 ? 255 * (R - r) / 1.5 : 255; }
+  x.putImageData(im, 0, 0); placeAccMark();
+}
+function placeAccMark(){ const m = $("#accmark"), box = $("#accwheelbox"); if (!m || !box) return; const A = S.settings.accent || {}, hsv = A.hsv || hex2hsv(A.hex || "#2f8c2e");
+  const R = box.clientWidth / 2, a = hsv.h * Math.PI / 180; m.style.left = (R + Math.cos(a) * hsv.s * R) + "px"; m.style.top = (R + Math.sin(a) * hsv.s * R) + "px"; m.style.background = A.hex || "#2f8c2e";
+  m.style.display = A.mode === "custom" ? "" : "none"; }
+function setCustomAccent(hsv, fromHex){
+  const A = S.settings.accent || {}, hex = hsv2hex(hsv.h, hsv.s, hsv.v), redraw = !A.hsv || Math.abs((A.hsv.v || 0) - hsv.v) > .001 || A.mode !== "custom";
+  A.mode = "custom"; A.hsv = hsv; A.hex = hex; S.settings.accent = A; LS.set("settings", S.settings);
+  applyAccent(S.themeArmy);
+  const sw = $("#accsw"), hx = $("#acchex"), sl = $("#accv"); if (sw) sw.style.background = hex; if (hx && !fromHex) hx.value = hex.toUpperCase();
+  if (sl) { sl.style.setProperty("--accv-c", hsv2hex(hsv.h, hsv.s, 1)); if (fromHex) sl.value = Math.round(hsv.v * 100); }
+  document.querySelectorAll('.acccard[data-v="custom"] .accsw').forEach(e => e.style.background = hex);
+  if (redraw) drawAccWheel(); else placeAccMark();
+  clearTimeout(S.accT); S.accT = setTimeout(() => { if (!S.accDrag) { const y = scrollY; render(); scrollTo(0, y); } }, 600);
+}
+(function(){
+  const pick = e => { const c = $("#accwheel"); if (!c) return; const r = c.getBoundingClientRect(), R = r.width / 2, dx = e.clientX - r.left - R, dy = e.clientY - r.top - R;
+    const s = Math.min(1, Math.hypot(dx, dy) / R), h = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360, A = S.settings.accent || {}, v = (A.hsv && A.hsv.v) || (A.hex ? hex2hsv(A.hex).v : .55);
+    setCustomAccent({ h, s, v }); };
+  document.addEventListener("pointerdown", e => { if (e.target.id !== "accwheel") return; S.accDrag = true; e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); pick(e); e.preventDefault(); });
+  document.addEventListener("pointermove", e => { if (S.accDrag) { pick(e); e.preventDefault(); } }, { passive:false });
+  const up = () => { if (!S.accDrag) return; S.accDrag = false; const y = scrollY; render(); scrollTo(0, y); };
+  document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
 })();
 
 /* ============ boot ============ */
