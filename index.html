@@ -2116,7 +2116,7 @@ function foldDs(html){
     const box = h.parentElement;
     if (!box || box.tagName !== "DIV" || box.className || box.firstElementChild !== h) return;
     const title = h.textContent.trim(), k = "ds-" + lc(title).replace(/[^a-z]+/g, "-").replace(/-?\d.*$/, "");
-    const d = document.createElement("details"); d.className = "dsfold"; d.dataset.keep = k; if (S.keep[k] !== false) d.open = true;
+    const d = document.createElement("details"); d.className = "dsfold"; d.dataset.keep = k; if (S.keep[k] === true) d.open = true;
     const sm = document.createElement("summary"); sm.className = "sec-h"; sm.textContent = title; d.appendChild(sm);
     h.remove(); while (box.firstChild) d.appendChild(box.firstChild); box.replaceWith(d);
   });
