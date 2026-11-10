@@ -2019,10 +2019,28 @@ function blocksHtml(blocks){
     return `<div class="cb-p"><span>${b.label ? `<b>${esc(b.label)}:</b> ` : ""}${sanitize(esc(b.text))}</span>${vp}</div>`;
   }).join("");
 }
-function cardHtml(c, kind, open){
+/* Show only the scoring for the mode a player is using (cards print both Fixed and Tactical versions). */
+function blocksForMode(blocks, mode){
+  if (!mode) return blocks || [];
+  const other = mode === "fixed" ? "tactical" : "fixed", rxOther = new RegExp("^\\s*" + other + "\\b", "i");
+  const secs = []; let cur = [];
+  (blocks||[]).forEach(b => { if (b.t === "h" && cur.length) { secs.push(cur); cur = []; } cur.push(b); }); if (cur.length) secs.push(cur);
+  const modeOf = sec => { for (const b of sec) { const t = (b.t === "when" || b.t === "h" ? b.text : "") + " " + (b.vp || "");
+    if (/using fixed missions|^\s*fixed\b/i.test(t.trim()) && !/tactical/i.test(t)) return "fixed"; if (/using tactical missions|^\s*tactical\b/i.test(t.trim()) && !/fixed/i.test(t)) return "tactical"; } return ""; };
+  const tidy = b => { const x = { ...b };
+    if (x.text) x.text = x.text.replace(/\s*\((?:if you are )?using (?:fixed|tactical) missions\)/i, "");
+    if (x.vp) { const parts = x.vp.split("·").map(y => y.trim()).filter(y => !rxOther.test(y)); x.vp = parts.join(" · ").replace(/^\s*(fixed|tactical)\s+/i, ""); }
+    return x; };
+  return secs.filter(sec => modeOf(sec) !== other).flat()
+    .filter(b => !(mode === "fixed" && /^when drawn$/i.test(b.label || "")))
+    .filter(b => !(!b.vp && b.t === "p" && new RegExp("as an? " + other + " mission", "i").test(b.text || "")))
+    .filter(b => !(b.vp && b.vp.split("·").every(y => rxOther.test(y.trim()))))
+    .map(tidy);
+}
+function cardHtml(c, kind, open, mode){
   if (!c) return "";
   return `<details class="mcard"${open?" open":""}><summary><span class="kind">${esc(kind)}</span><b>${esc(c.name)}</b></summary>
-    ${c.flavour ? `<div class="cb-fl">${esc(c.flavour)}</div>` : ""}${blocksHtml(c.blocks)}</details>`;
+    ${c.flavour ? `<div class="cb-fl">${esc(c.flavour)}</div>` : ""}${blocksHtml(blocksForMode(c.blocks, mode))}</details>`;
 }
 function challengerHtml(c){
   return `<details class="mcard"><summary><span class="kind">Challenger</span><b>${esc(c.name)}</b> <span class="muted small">or ${esc(c.mission_name)}</span></summary>
@@ -2035,12 +2053,12 @@ function secPanel(g, p){
   let body;
   if (ps.mode === "fixed") {
     body = [0,1].map(i => `<label class="f" for="fx${p}${i}">Fixed mission ${i+1}<select id="fx${p}${i}" data-ch="gfixed" data-p="${p}" data-i="${i}"><option value="">Choose…</option>${fixedOK.map(c => `<option${ps.fixed[i]===c.name?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>`).join("")
-      + ps.fixed.filter(Boolean).map(n => `<div class="actcard">${cardHtml(secByName(n), "Fixed", false)}<div class="row"><button class="btn small primary" data-act="gsec" data-op="score" data-p="${p}" data-n="${esc(n)}">Score VP</button></div></div>`).join("")
+      + ps.fixed.filter(Boolean).map(n => `<div class="actcard">${cardHtml(secByName(n), "Fixed", false, "fixed")}<div class="row"><button class="btn small primary" data-act="gsec" data-op="score" data-p="${p}" data-n="${esc(n)}">Score VP</button></div></div>`).join("")
       + `<div class="small muted">Cards marked Fixed on the card. No Prisoners can't be a Fixed Mission in tournament play.</div>`;
   } else {
     const left = ps.deck.length;
     body = `<div class="row small muted"><span class="grow">${ps.active.length}/2 active · ${left} left in deck · ${ps.done.length} achieved</span></div>`
-      + (ps.active.length ? ps.active.map(n => `<div class="actcard">${cardHtml(secByName(n), "Active", false)}
+      + (ps.active.length ? ps.active.map(n => `<div class="actcard">${cardHtml(secByName(n), "Active", false, "tactical")}
           <div class="row"><button class="btn small" data-act="gsec" data-op="done" data-p="${p}" data-n="${esc(n)}">Achieved</button><button class="btn small" data-act="gsec" data-op="discard" data-p="${p}" data-n="${esc(n)}">Discard</button><button class="btn small" data-act="gsec" data-op="neworders" data-p="${p}" data-n="${esc(n)}">New Orders (1CP)</button></div></div>`).join("") : `<div class="small muted">No active cards.</div>`)
       + `<div class="row"><button class="btn small primary" data-act="gsec" data-op="draw" data-p="${p}"${ps.active.length>=2||(!left && (ps.done.length||ps.gone.length))?" disabled":""}>Draw to 2 cards</button>${!ps.deck.length && !ps.active.length && !ps.done.length ? "" : `<span class="grow"></span><button class="btn small" data-act="gsec" data-op="reset" data-p="${p}">Reshuffle deck</button>`}</div>`
       + (ps.active.length < 2 ? (() => { const pool = ps.deck.length || ps.done.length || ps.gone.length ? ps.deck : M.secondaries.map(c => c.name).filter(n => !ps.active.includes(n));
@@ -2048,7 +2066,8 @@ function secPanel(g, p){
       + (ps.done.length ? `<div class="small muted">Achieved: ${ps.done.map(esc).join(", ")}</div>` : "");
   }
   return `<div class="card stack ${p === 0 ? "pl-me" : "pl-opp"}"><div class="row"><h3 class="grow">${esc(g.names[p])}: secondaries</h3>
-    <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div></div>${body}</div>`;
+    <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div></div>
+    <div class="small muted modehelp">${ps.mode === "fixed" ? "<b>Fixed:</b> pick 2 cards before the game and keep them all game, scoring them every time you can." : "<b>Tactical:</b> draw 2 random cards each turn. Score or discard them, then draw back up to 2."} Each player chooses their own. Cards only show the rules for the way you're playing.</div>${body}</div>`;
 }
 function viewGame(){
   const g = fixGame(S.game ||= blankGame());
@@ -2069,7 +2088,7 @@ function viewGame(){
       ${dep ? `<figure class="map"><img src="${dep.img}" alt="${esc(dep.name)} deployment map"><figcaption>${esc(dep.size)} · ${esc(dep.name)}</figcaption></figure>` : ""}
       ${(() => { const pm = M.tournamentPool.find(t => t.primary === g.pri && t.deployment === g.dep && g.size === "Strike Force"); const ls = pm && M.layouts ? M.layouts.filter(x => new RegExp("\\b" + x.name + "\\b").test(pm.layouts)) : [];
         return ls.length ? `<div><div class="sec-h">Recommended terrain · ${ls.length}</div><div class="lgrid">${ls.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></div>` : ""; })()}
-      ${cardHtml(pri, "Primary", true)}${cardHtml(tw, "Twist", false)}
+      ${cardHtml(pri, "Primary", true)}${cardHtml(tw, "Twist", false, g.ps[0].mode === g.ps[1].mode ? g.ps[0].mode : "")}
     </div>
     ${secPanel(g, 0)}${secPanel(g, 1)}
     ${M.layouts ? `<details class="card"><summary><b>Terrain layouts</b> <span class="muted small">${M.layouts.length} from Chapter Approved</span></summary><div class="lgrid" style="margin-top:10px">${M.layouts.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></details>` : `<div class="small muted">Load the updated missions file to see terrain layouts.</div>`}
