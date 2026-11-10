@@ -779,7 +779,7 @@ ul.tips{margin:6px 0 4px;padding-left:18px}ul.tips li{margin:4px 0;font-size:.9r
   .buildv > .ba{grid-area:a}.buildv > .bu{grid-area:u}.buildv > .bz{grid-area:z;align-self:start}
   .buildv > .ba,.buildv > .bz{position:relative}
   .gamev.gwide{display:grid !important;grid-template-columns:minmax(360px,460px) minmax(0,1fr);grid-template-areas:"g1 ds" "g2 ds";grid-template-rows:auto 1fr;gap:16px 22px;align-items:start}
-  .gamev.gwide > *{margin-top:0 !important}.gwide > .g1{grid-area:g1}.gwide > .gds-col{grid-area:ds;position:sticky;top:12px;max-height:calc(100vh - 150px);overflow-y:auto;overscroll-behavior:contain;border-radius:12px}.gwide > .g2{grid-area:g2;align-self:start}
+  .gamev.gwide > *{margin-top:0 !important}.gwide > .g1{grid-area:g1}.gwide > .gds-col{grid-area:ds;position:sticky;top:calc(var(--toph,110px) + 12px);max-height:calc(100dvh - var(--toph,110px) - var(--navh,70px) - 96px);overflow-y:auto;overscroll-behavior:contain;border-radius:12px}.gwide > .g2{grid-area:g2;align-self:start}
   .briefgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:14px}
   .listgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .sheet{max-width:860px}
@@ -1801,8 +1801,11 @@ function render(){
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
   window.scrollTo(0, st);
-  fitStats(m);
+  fitStats(m); measureBars();
 }
+function measureBars(){ const t = $("#top"), n = document.querySelector("nav.tabs"); const r = document.documentElement.style;
+  if (t) r.setProperty("--toph", t.offsetHeight + "px"); if (n) r.setProperty("--navh", n.offsetHeight + "px"); }
+window.addEventListener("resize", () => measureBars());
 function renderTop(){
   const l = curList(); const top = $("#top");
   let bar = "";
