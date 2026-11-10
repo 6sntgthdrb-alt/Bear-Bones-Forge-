@@ -623,7 +623,7 @@ body:has(.turnbar) .toast{bottom:calc(150px + env(safe-area-inset-bottom))}
 .gamev details.card > summary{padding:2px 0}
 .gamev .srow{padding:8px 0 8px 12px;margin:6px 0}
 .gamev .trkbox{padding:10px 12px}
-@media (max-width:420px){.gamev{gap:16px}.gamev > .row > .card{flex-basis:100%}}
+
 
 .sbox .sv{overflow:hidden !important;text-overflow:clip !important;white-space:nowrap;max-width:100%;letter-spacing:-.01em}
 .sbox{padding-left:2px !important;padding-right:2px !important}
@@ -649,6 +649,46 @@ header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
 .vs-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 8px;background:#0d0d0f;color:#fff;gap:2px}
 .vs-mid b{font:900 1.05rem var(--display);letter-spacing:.06em}
 .vs-mid span{font-size:.7rem;opacity:.8}
+
+/* Game tab spacing with margins (works in every browser, including older Safari) */
+.gamev{display:block !important}
+.gamev > *{margin:0}
+.gamev > * + *{margin-top:18px !important}
+.gamev > .turnbar{margin:0 !important}
+.gamev > .btn,.gamev > label.f{display:block;width:100% !important;box-sizing:border-box}
+.gamev > label.f{display:flex}
+.gdsw{display:block !important}
+.gdsw > * + *{margin-top:14px !important}
+.gamev > .row{display:flex;flex-wrap:wrap}
+.gamev > .row > .card{margin:0}
+.gamev > .row{flex-wrap:nowrap !important}
+.gamev > .row > .card{flex:1 1 0 !important;min-width:0;margin:0 !important}
+.gamev > .row > .card + .card{margin-left:12px !important}
+.gamev .battle-missions{display:block !important}
+.gamev .battle-missions > * + *{margin-top:14px !important}
+
+/* game setup step */
+.gsetup .setup-h{display:flex;flex-direction:column;gap:4px}
+.setupbox{display:flex;flex-direction:column;gap:12px;transition:transform .35s ease,opacity .35s ease}
+.setupbox.done{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pl) 50%,transparent)}
+.setpick{display:flex;align-items:center;gap:10px}
+.setpick .lemb{width:44px;height:44px}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--muted);text-decoration:underline;cursor:pointer;align-self:flex-start;font:inherit;font-size:.85rem}
+@keyframes slideUpIn{from{transform:translateY(-60vh);opacity:.2}to{transform:none;opacity:1}}
+.slidein .gds{animation:slideUpIn .6s cubic-bezier(.2,.8,.2,1) both}
+.slidein .gds.pl-opp,.slidein > .card.pl-opp{animation-delay:.08s}
+@media (prefers-reduced-motion:reduce){.slidein .gds{animation:none}}
+
+/* foldable datasheet sections: bold headings that stay visible when closed */
+.dsfold > summary.sec-h{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:8px 10px;margin:0 0 8px;border:0 !important;border-radius:var(--r-sm);
+  background:color-mix(in srgb,var(--acc-text,var(--accent)) 14%,var(--panel2));font-size:.85rem;font-weight:800;letter-spacing:.12em}
+.dsfold > summary.sec-h::-webkit-details-marker{display:none}
+.dsfold > summary.sec-h::after{content:"▾";margin-left:auto;font-size:1rem;transition:transform .2s}
+.dsfold:not([open]) > summary.sec-h{margin-bottom:0;opacity:.95}
+.dsfold:not([open]) > summary.sec-h::after{transform:rotate(-90deg)}
+.dsfold:not([open]) > summary.sec-h::before{content:"+";font-weight:900;margin-right:2px}
+.ps .dsfold > summary.sec-h{background:none;padding:0}
+.ps .dsfold > summary.sec-h::after,.ps .dsfold > summary.sec-h::before{display:none}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -657,6 +697,8 @@ header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
   body::before{display:none}
   .ps-ds{break-inside:avoid}
 }
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;cursor:pointer}.chk input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--acc,currentColor)}
+.gamev .btn.tableset{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px!important;font-size:1.05rem;width:100%}.btn.tableset b,.btn.tableset span{color:inherit!important;background:none}.btn.tableset .small{opacity:.85;font-weight:400;font-size:.78rem}
 </style>
 </head>
 <body data-army="">
@@ -1664,7 +1706,7 @@ function renderTop(){
 }
 /* Game tab header: your army's banner vs your opponent's, with both army icons */
 function vsBannerHtml(){
-  const g = S.game || {}, ml = S.lists.find(x => x.id === g.listId), o = g.opp;
+  const g = fixGame(S.game ||= blankGame()), ml = S.lists.find(x => x.id === g.listId), o = g.opp;
   const side = (army, name, sub, cls) => army
     ? `<div class="vs-side ${cls}${hasArt(army) ? " custom" : ""}" style="--accent:${accentOf(army)};--scene:url(${sceneImage(army)})"><span class="vs-emb">${emblem(army)}</span><div class="vs-txt"><b>${esc(name)}</b><span>${esc(sub)}</span></div></div>`
     : `<div class="vs-side ${cls} vs-empty"><span class="vs-emb vs-q">?</span><div class="vs-txt"><b>${esc(name)}</b><span>${esc(sub)}</span></div></div>`;
@@ -1982,6 +2024,19 @@ function unitWeapons(u){
   });
   return have.size ? have : null;
 }
+/* Each datasheet section (weapons, abilities, keywords…) folds open/closed. Closing one type closes it on every datasheet. */
+function foldDs(html){
+  const t = document.createElement("template"); t.innerHTML = html;
+  t.content.querySelectorAll(".sec-h").forEach(h => {
+    const box = h.parentElement;
+    if (!box || box.tagName !== "DIV" || box.className || box.firstElementChild !== h) return;
+    const title = h.textContent.trim(), k = "ds-" + lc(title).replace(/[^a-z]+/g, "-").replace(/-?\d.*$/, "");
+    const d = document.createElement("details"); d.className = "dsfold"; d.dataset.keep = k; if (S.keep[k] !== false) d.open = true;
+    const sm = document.createElement("summary"); sm.className = "sec-h"; sm.textContent = title; d.appendChild(sm);
+    h.remove(); while (box.firstChild) d.appendChild(box.firstChild); box.replaceWith(d);
+  });
+  return t.innerHTML;
+}
 function dsBody(id, opt = {}){
   const d = D.ds[id]; if (!d) return "";
   const models = D.models[id] || [], ab = D.abil[id] || [], k = D.kw[id] || [];
@@ -2017,7 +2072,7 @@ function dsBody(id, opt = {}){
     <div><div class="sec-h">Keywords</div><div class="small">${esc(k.filter(x => String(x.is_faction_keyword).toLowerCase()!=="true").map(x=>x.keyword).join(", "))}</div>
       <div class="small muted">Faction: ${esc(k.filter(x => String(x.is_faction_keyword).toLowerCase()==="true").map(x=>x.keyword).join(", "))}</div></div>
     `;
-  return html;
+  return foldDs(html);
 }
 function dsSheet(id, fromPicker, uid, all){
   const d = D.ds[id]; if (!d) return;
@@ -2039,7 +2094,7 @@ function stratsNow(g){
   const ph = PHASES[g.phase], mine = g.turn === "me";
   const okTurn = s => { const t = lc(s.turn); return !t || t.startsWith("either") || (mine ? t.startsWith("your") : t.startsWith("opponent")); };
   const okPhase = s => { const p = lc(s.phase); return !p || p.includes("any phase") || p.includes(lc(ph)); };
-  const chal = g.chal ? challengerStrats().filter(s => lc(s.name) === lc(g.chal)) : [];
+  const chal = g.chal && useChal() ? challengerStrats().filter(s => lc(s.name) === lc(g.chal)) : [];
   const pool = [...(l.det ? detStrats(l.army, l.det) : []), ...coreStrats(), ...chal];
   return { l, list: pool.filter(s => okTurn(s) && okPhase(s)) };
 }
@@ -2199,11 +2254,11 @@ function gameDsHtml(g){
       <div class="stack" style="margin-top:10px"><label class="f" for="g-myname-in">Army name<input type="text" id="g-myname-in" data-in="gmyname" value="${esc(l.name)}"></label>${targetPicker("me")}${armyRulesHtml(l, "g-myrules")}${l.units.length ? listDsHtml(l, "gm-") : `<div class="small muted">This list has no units yet.</div>`}</div></details>`
     : `<div class="card pl-me"><span class="gds-h">My army</span><div class="small muted">Choose your list in Battle mode above to see your datasheets here.</div></div>`;
   const core = `<details class="card foldcard"${keepAttr("g-core")}><summary><h3>Core rules</h3><span class="muted small">Search cover, charging, transports, visibility…</span></summary><div class="stack" style="margin-top:10px;gap:6px"><input type="search" id="gcoreq" data-in="coreq" placeholder="Search the Core Rules" value="${esc(S.coreQ||"")}" aria-label="Search core rules"><div id="gcoreres">${coreRefHtml(S.coreQ)}</div></div></details>`;
-  return `<div class="stack" style="gap:10px">${core}<div class="sec-h">Datasheets</div>${mine}${oppHtml(g)}</div>`;
+  return `<div class="stack gdsw${S.slideDs ? " slidein" : ""}">${core}<div class="sec-h">Datasheets</div>${mine}${oppHtml(g)}</div>`;
 }
 function oppHtml(g){
   const o = g.opp;
-  if (!o) return `<div class="card stack pl-opp"><div class="row"><h3 class="grow">Opponent's army</h3></div><p class="small muted" style="margin:0">Import your opponent's list to check their datasheets during the game.</p><button class="btn" data-act="oppimport">Import opponent's list</button></div>`;
+  if (!o) return `<div class="card stack pl-opp"><div class="row"><h3 class="grow">Opponent's army</h3></div><p class="small muted" style="margin:0">Import your opponent's list, or pick one of your saved lists, to check their datasheets during the game.</p>${oppPickHtml(g, false)}</div>`;
   const tot = o.units.reduce((a,u) => a + unitCost(u) + enhCost(u), 0);
   return `<details class="card pl-opp gds"${keepAttr("g-opp")}><summary><span class="gds-h">Opponent's army</span><span class="small muted"><span id="g-oppname">${esc(o.name)}</span> · ${tot} pts · ${o.units.length} units</span></summary><div class="stack" style="margin-top:10px">
     <label class="f" for="g-oppname-in">Army name<input type="text" id="g-oppname-in" data-in="goppname" value="${esc(o.name)}"></label>
@@ -2214,6 +2269,16 @@ function oppHtml(g){
         ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true, vs: targetFor("opp") })}</div></details>`; }).join("")}
     <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div></details>`;
 }
+const useChal = () => LS.get("useChal", false);
+function terrainHtml(g){
+  if (!M || !M.layouts) return "";
+  const pm = M.tournamentPool.find(t => t.primary === g.pri && t.deployment === g.dep && g.size === "Strike Force");
+  const rec = pm ? M.layouts.filter(x => new RegExp("\\b" + x.name + "\\b").test(pm.layouts)) : [];
+  const th = x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`;
+  return `<details class="card foldcard"${keepOpen("g-terrain")}><summary><h3>🏚️ Terrain</h3><span class="muted small">${rec.length ? rec.length + " recommended layouts" : "Chapter Approved layouts"}</span></summary><div style="margin-top:10px">
+    ${rec.length ? `<div class="lgrid">${rec.map(th).join("")}</div>` : `<div class="small muted">Pick a Chapter Approved tournament mission below to see its recommended layouts.</div>`}
+    <details class="dsub" style="margin-top:8px"><summary>All layouts · ${M.layouts.length}</summary><div class="lgrid" style="margin-top:8px">${M.layouts.map(th).join("")}</div></details></div></details>`;
+}
 function keepOpen(k){ return ` data-keep="${k}"${S.keep[k] === false ? "" : " open"}`; }
 function battleHtml(g, setup = ""){
   const lists = S.lists;
@@ -2223,18 +2288,18 @@ function battleHtml(g, setup = ""){
     <div class="row"><h3 class="grow">Battle mode</h3><span class="pill acc num">Round ${g.round}</span></div>
     <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>
     ${!g.role ? `<div class="rolepick"><div class="sec-h">Attacker or defender?</div><div class="small muted">Choose before the game starts. The Attacker takes the first turn and is always the left column in victory points.</div>
-      <div class="row"><button class="btn rolebtn grow" data-act="grole" data-v="att"><b>I'm the Attacker</b><span class="small">I go first</span></button><button class="btn rolebtn grow" data-act="grole" data-v="def"><b>I'm the Defender</b><span class="small">Opponent goes first</span></button></div></div>`
+      <div class="row"><button class="btn rolebtn grow" data-act="grole" data-v="att"><b>I'm the Attacker</b><span class="small">I go first</span></button><button class="btn rolebtn grow" data-act="grole" data-v="def"><b>I'm the Defender</b><span class="small">Opponent goes first</span></button></div><button class="linkbtn" data-act="gtable" data-v="0">← Back to battlefield setup</button></div>`
     : `<div class="row small"><span class="pill pl-me-pill">You: ${g.role === "att" ? "Attacker" : "Defender"}</span><span class="pill pl-opp-pill">Opponent: ${g.role === "att" ? "Defender" : "Attacker"}</span>${g.round === 1 && g.phase === 0 && g.turn === (g.role === "att" ? "me" : "opp") ? `<span class="grow"></span><button class="btn small" data-act="grole" data-v="">Change</button>` : ""}</div>
     <div class="seg" role="group" aria-label="Whose turn">${gOrder(g).map(p => p === 0 ? `<button class="pl-me-b" data-act="gturn" data-v="me" aria-pressed="${g.turn==="me"}">${turnName(g.names[0])}</button>` : `<button class="pl-opp-b" data-act="gturn" data-v="opp" aria-pressed="${g.turn==="opp"}">${turnName(g.names[1])}</button>`).join("")}</div>
     <div class="phases" role="group" aria-label="Phase">${PHASES.map((p,i) => `<button data-act="gphase" data-v="${i}" aria-pressed="${g.phase===i}" aria-label="${p} phase">${["Command","Move","Shoot","Charge","Fight"][i]}</button>`).join("")}</div>
     <div class="row"><span class="small muted grow">${who} ${PHASES[g.phase]} phase${g.phase===0 ? " · both players gained 1CP" : ""}</span><button class="btn primary" data-act="gnext">Next phase →</button></div>`}
-    ${l ? `<details class="fold"${keepOpen("g-strats")}><summary class="sec-h">Stratagems you can use now · ${list.length}</summary>
+    ${!g.role ? "" : l ? `<details class="fold"${keepOpen("g-strats")}><summary class="sec-h">Stratagems you can use now · ${list.length}</summary>
       <div class="cpnote">You have <b>${num(g.cp[0])} CP</b>.${list.some(s => num(s.cp_cost) > num(g.cp[0])) ? " Faded ones cost more than you have." : ""}</div>
       ${list.length ? list.map(s => stratRow(s, num(g.cp[0]))).join("") : `<div class="small muted">Nothing usable in this phase.</div>`}
       ${!l.det ? `<div class="small muted">Pick a detachment for this list to see its stratagems too.</div>` : ""}
-      ${challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</details>
+      ${useChal() && challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</details>
       ${(() => { const ab = abilitiesNow(l, PHASES[g.phase]); return `<details class="fold"${keepOpen("g-abil")}><summary class="sec-h">Abilities that matter now · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">None of your army's abilities mention this phase.</div>`}</details>`; })()}` : `<div class="small muted">Choose your list to see which stratagems and abilities you can use each phase.</div>`}
-    ${oppStratsHtml(g)}
+    ${g.role ? oppStratsHtml(g) : ""}
     ${S.marks.length ? `<details class="dsub"><summary>★ Your bookmarks · ${S.marks.length}</summary>${marksHtml()}</details>` : ""}
     ${setup ? `<div class="stack battle-missions">${setup}</div>` : ""}
   </div>`;
@@ -2316,15 +2381,35 @@ function secPanel(g, p){
       + (ps.done.length ? `<div class="small muted">Achieved: ${ps.done.map(esc).join(", ")}</div>` : "");
   }
   const sum = ps.mode === "fixed" ? ps.fixed.filter(Boolean).join(", ") : ps.active.join(", ");
-  return `<details class="card foldcard ${p === 0 ? "pl-me" : "pl-opp"}"${keepOpen("g-sec" + p)}><summary><h3>${esc(g.names[p])}: secondaries</h3><span class="muted small">${ps.mode === "fixed" ? "Fixed" : "Tactical"}${sum ? " · " + esc(sum) : ""}</span></summary><div class="stack" style="margin-top:10px">
-    <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div></div>
+  return `<details class="card foldcard ${p === 0 ? "pl-me" : "pl-opp"}"${keepOpen("g-sec" + p)}><summary><h3>${esc(g.names[p])}: secondaries</h3><span class="muted small">🎯 ${ps.mode === "fixed" ? "Fixed" : "Tactical"} missions${sum ? " · " + esc(sum) : ""}</span></summary><div class="stack" style="margin-top:10px">
+    <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div>
     <div class="small muted modehelp">${ps.mode === "fixed" ? "<b>Fixed:</b> pick 2 cards before the game and keep them all game, scoring them every time you can." : "<b>Tactical:</b> draw 2 random cards each turn. Score or discard them, then draw back up to 2."} Each player chooses their own. Cards only show the rules for the way you're playing.</div>${body}</div></details>`;
+}
+/* Step 1 of a game: pick both armies. Once both are set, the normal Game layout slides in. */
+function oppPickHtml(g, big){
+  const others = S.lists.filter(x => x.id !== g.listId);
+  return `<div class="stack" style="gap:10px"><button class="btn${big ? " primary" : ""}" data-act="oppimport">Import opponent's list</button>
+    ${S.lists.length ? `<label class="f">Or pick one of your saved lists<select data-ch="opppick"><option value="">Choose a list…</option>${(others.length ? others : S.lists).map(x => `<option value="${x.id}">${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>` : ""}</div>`;
+}
+function setupHtml(g){
+  const ml = S.lists.find(x => x.id === g.listId);
+  const mine = `<div class="card pl-me setupbox${ml ? " done" : ""}"><div class="gds-h">1 · Your army</div>
+    ${ml ? `<div class="setpick"><span class="lemb" style="--accent:${accentOf(ml.army)}">${emblem(ml.army)}</span><div class="grow"><b>${esc(ml.name)}</b><div class="small muted">${esc(armyName(ml.army, ml))} · ${validate(ml).total} pts</div></div><span class="pill ok">✓</span></div>` : ""}
+    ${S.lists.length ? `<label class="f">${ml ? "Change list" : "Choose one of your lists"}<select data-ch="glist"><option value="">Choose a list…</option>${S.lists.map(x => `<option value="${x.id}"${g.listId === x.id ? " selected" : ""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>` : `<div class="small muted">You don't have any lists yet. Make one on the Lists tab first.</div>`}</div>`;
+  const o = g.opp;
+  const theirs = `<div class="card pl-opp setupbox${o ? " done" : ""}"><div class="gds-h">2 · Opponent's army</div>
+    ${o ? `<div class="setpick"><span class="lemb" style="--accent:${accentOf(o.army)}">${emblem(o.army)}</span><div class="grow"><b>${esc(o.name)}</b><div class="small muted">${esc(armyName(o.army, o))} · ${o.units.reduce((a,u) => a + unitCost(u) + enhCost(u), 0)} pts</div></div><span class="pill ok">✓</span></div><button class="btn small" data-act="oppclear">Change</button>` : oppPickHtml(g, true)}
+    ${!o ? `<button class="linkbtn" data-act="oppskip">Skip, we'll play without their list</button>` : ""}</div>`;
+  return `<div class="stack gamev gsetup"><div class="setup-h"><h2>New game</h2><p class="small muted" style="margin:0">Pick both armies first. Then you'll choose Attacker or Defender and start.</p></div>${mine}${theirs}
+    ${S.history.length ? `<details class="card"><summary><b>Past games</b> <span class="muted small">${S.history.length}</span></summary><div class="stack" style="margin-top:8px">${S.history.map(h => `<div class="hrow"><span class="pill ${h.result === "w" ? "ok" : h.result === "l" ? "err" : ""}">${h.result === "w" ? "Win" : h.result === "l" ? "Loss" : "Draw"}</span><div class="grow"><b>${esc(h.listName)}</b> <span class="num">${h.score[0]}–${h.score[1]}</span><div class="small muted">vs ${esc(h.opp)} · ${new Date(h.date).toLocaleDateString("en-NZ")}</div></div><button class="btn small" data-act="hcopy" data-id="${h.id}">Copy report</button></div>`).join("")}</div></details>` : ""}</div>`;
 }
 function viewGame(){
   const g = fixGame(S.game ||= blankGame());
+  if (!g.role && (!g.listId || (!g.opp && !g.oppSkip))) return setupHtml(g);
+  const slide = S.slideIn; S.slideIn = false;
   const tot = p => g.vp[p].reduce((a,b)=>a+num(b),0) + g.sec[p].reduce((a,b)=>a+num(b),0);
   const cell = (arr, p, r) => `<input class="${p === 0 ? "pl-me-in" : "pl-opp-in"}" type="number" inputmode="numeric" min="0" aria-label="${esc(g.names[p])} round ${r+1}" data-in="g" data-k="${arr}" data-p="${p}" data-r="${r}" value="${g[arr][p][r]||""}" placeholder="0">`;
-  let setup;
+  let setup, rest = "";
   if (M) {
     const deps = depList(g), prims = primList(g), dep = deps.find(d => d.name === g.dep), pri = prims.find(c => c.name === g.pri), tw = M.twists.find(c => c.name === g.twist);
     setup = `<details class="card foldcard"${keepOpen("g-mission")}><summary><h3>Mission</h3><span class="muted small">${esc([g.pri, g.dep].filter(Boolean).join(" · ") || "Not chosen yet")}</span></summary><div class="stack" style="margin-top:10px">
@@ -2336,14 +2421,12 @@ function viewGame(){
         <label class="f grow" for="gpri">Primary mission<select id="gpri" data-ch="gpri"><option value="">Choose…</option>${prims.map(c => `<option${g.pri===c.name?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
       </div>
       <label class="f" for="gtw">Twist (optional)<select id="gtw" data-ch="gtw"><option value="">No twist</option>${M.twists.map(c => `<option${g.twist===c.name?" selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+      <label class="chk"><input type="checkbox" data-act="usechal"${useChal() ? " checked" : ""}> <span>Use Challenger cards <span class="muted small">(Pariah Nexus matched play, for the player behind on VP)</span></span></label>
       ${dep ? `<figure class="map"><img src="${dep.img}" alt="${esc(dep.name)} deployment map"><figcaption>${esc(dep.size)} · ${esc(dep.name)}</figcaption></figure>` : ""}
-      ${(() => { const pm = M.tournamentPool.find(t => t.primary === g.pri && t.deployment === g.dep && g.size === "Strike Force"); const ls = pm && M.layouts ? M.layouts.filter(x => new RegExp("\\b" + x.name + "\\b").test(pm.layouts)) : [];
-        return ls.length ? `<div><div class="sec-h">Recommended terrain · ${ls.length}</div><div class="lgrid">${ls.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></div>` : ""; })()}
       ${cardHtml(pri, "Primary", true)}${cardHtml(tw, "Twist", false, g.ps[0].mode === g.ps[1].mode ? g.ps[0].mode : "")}
-    </div></details>
-    ${secPanel(g, 0)}${secPanel(g, 1)}
-    ${M.layouts ? `<details class="card"><summary><b>Terrain layouts</b> <span class="muted small">${M.layouts.length} from Chapter Approved</span></summary><div class="lgrid" style="margin-top:10px">${M.layouts.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></details>` : `<div class="small muted">Load the updated missions file to see terrain layouts.</div>`}
-    <details class="card"><summary><b>Challenger cards</b> <span class="muted small">for the player behind on VP</span></summary><div class="stack" style="margin-top:10px">${M.challengers.map(challengerHtml).join("")}</div></details>`;
+    </div></details>`;
+    rest = `${secPanel(g, 0)}${secPanel(g, 1)}
+    ${!useChal() ? "" : `<details class="card"><summary><b>Challenger cards</b> <span class="muted small">for the player behind on VP</span></summary><div class="stack" style="margin-top:10px">${M.challengers.map(challengerHtml).join("")}</div></details>`}`;
   } else {
     setup = `<div class="card stack">
       <div class="row"><label class="f grow" for="gp">Primary mission<input type="text" id="gp" data-in="gm" data-k="primary" value="${esc(g.primary)}" placeholder="e.g. Take and Hold"></label></div>
@@ -2351,6 +2434,16 @@ function viewGame(){
       <div class="small muted">Load your missions file on the <a href="#" data-act="nav" data-v="data">Settings</a> tab to pick missions, see the maps and draw secondaries.</div>
     </div>`;
   }
+  if (!g.role && !g.tableSet) return `<div class="stack gamev">
+    <div class="card stack"><div class="gds-h">3 · Prepare the battlefield</div>
+      <div class="small muted">Choose the mission and lay out the terrain. When the table is ready, you'll decide who attacks and who defends.</div>
+      <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${S.lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label></div>
+    ${setup}
+    ${terrainHtml(g)}
+    <button class="btn primary tableset" data-act="gtable" data-v="1"><b>⚔️ The battlefield is set</b><span class="small">Next: Attacker and Defender</span></button>
+    <button class="btn danger" data-act="gnew">${S.confirmGame ? "Tap again to clear the tracker" : "New game"}</button>
+  </div>`;
+  setup += rest;
   return `<div class="stack gamev">
     <div class="card"><div class="sec-h">Battle round</div>
       <div class="stepper"><button data-act="ground" data-d="-1" aria-label="Previous round">−</button><span class="big num">${g.round}</span><button data-act="ground" data-d="1" aria-label="Next round">+</button></div></div>
@@ -2710,11 +2803,13 @@ document.addEventListener("click", e => {
       S.sync.note = `In your account: ${c("list-")} list${c("list-")===1?"":"s"}, ${c("icon-")} icon${c("icon-")===1?"":"s"}, ${c("banner-")} banner${c("banner-")===1?"":"s"}, rules data ${docs.some(d => d.id === "wd-meta") ? "✓" : "✗"}, missions ${docs.some(d => d.id === "ms-meta") ? "✓" : "✗"}, glossary ${docs.some(d => d.id === "gl-meta") ? "✓" : "✗"}, ${docs.some(d => d.id === "history") ? "game history ✓" : "no game history yet"}. On this device: ${S.lists.length} list${S.lists.length===1?"":"s"}.`;
       S.sync.lastLoad = Date.now(); } catch (e) { S.sync.note = "Couldn't reach your account just now. Check your connection and try again."; } render(); })(); break;
     case "printlist": openPrint(); break;
+    case "usechal": { LS.set("useChal", !!t.checked); if (!t.checked && S.game) { S.game.chal = ""; saveGame(); } render(); break; }
     case "layout": { const x = M && M.layouts && M.layouts.find(y => y.name === t.dataset.n); if (x) openSheet("layout", x.name, `<img src="${x.img}" alt="${esc(x.name)} terrain layout" style="width:100%;border-radius:8px"><div class="small muted">Pinch to zoom for the measurements.</div>`); break; }
     case "doprint": try { window.print(); } catch { toast("Printing isn't available here."); } break;
     case "backup": exportBackup(false); break;
     case "import-list": openImport(); break;
     case "oppimport": openImport("opp"); break;
+    case "oppskip": { const g = fixGame(S.game ||= blankGame()); g.oppSkip = true; saveGame(); S.slideDs = true; render(); setTimeout(() => { S.slideDs = false; }, 50); window.scrollTo(0, 0); break; }
     case "oppclear": { const g = fixGame(S.game ||= blankGame()); g.opp = null; saveGame(); render(); break; }
     case "setsize": { const l2 = curList(); if (l2) { l2.points = +t.dataset.v; saveList(l2); render(); } break; }
     case "detpicker": {
@@ -2732,7 +2827,7 @@ document.addEventListener("click", e => {
       if (!txt.trim()) { $("#impmsg").innerHTML = `<div class="issue err">Paste a list first.</div>`; break; }
       const nl = parseListText(txt);
       if (!nl) { $("#impmsg").innerHTML = `<div class="issue err">Couldn't recognise any units in that list. Check it includes unit names with their points, e.g. "Intercessor Squad (80 points)".</div>`; break; }
-      if (S.impTarget === "opp") { const g = fixGame(S.game ||= blankGame()); g.opp = nl; g.names[1] = nl.name; saveGame(); closeSheet("import"); render(); toast(`Opponent: ${nl.units.length} units of ${armyName(nl.army)}`); break; }
+      if (S.impTarget === "opp") { const g = fixGame(S.game ||= blankGame()); const wasReady = !!(g.listId && (g.opp || g.oppSkip)); g.opp = nl; g.names[1] = nl.name; saveGame(); closeSheet("import"); if (!wasReady && g.listId) { S.slideDs = true; window.scrollTo(0, 0); } render(); S.slideDs = false; toast(`Opponent: ${nl.units.length} units of ${armyName(nl.army)}`); break; }
       S.lists.unshift(nl); S.cur = nl.id; LS.set("cur", nl.id); saveList(nl, true);
       closeSheet("import"); S.view = "build"; LS.set("view","build"); render();
       toast(`Imported ${nl.units.length} unit${nl.units.length===1?"":"s"} as ${armyName(nl.army)}`); break;
@@ -2807,6 +2902,7 @@ document.addEventListener("click", e => {
       }
       saveGame(); render(); if (!t.closest(".turnbar")) window.scrollTo(0, 0); break;
     }
+    case "gtable": { const g = fixGame(S.game ||= blankGame()); g.tableSet = t.dataset.v === "1"; saveGame(); if (g.tableSet) S.slideDs = true; render(); S.slideDs = false; window.scrollTo(0, 0); break; }
     case "gnew": if (!S.confirmGame) { S.confirmGame = true; render(); break; } S.game = blankGame(); S.confirmGame = false; saveGame(); render(); break;
   }
 });
@@ -2858,7 +2954,10 @@ document.addEventListener("change", e => {
     saveGame(); render(); return;
   }
   else if (k === "gchal") { const g = fixGame(S.game ||= blankGame()); g.chal = t.value; saveGame(); render(); return; }
-  else if (k === "glist") { const g = fixGame(S.game ||= blankGame()); g.listId = t.value; const ml = S.lists.find(x => x.id === t.value); if (ml) g.names[0] = ml.name; saveGame(); render(); return; }
+  else if (k === "opppick") { const g = fixGame(S.game ||= blankGame()), src = S.lists.find(x => x.id === t.value); if (!src) return;
+    const was = !!(g.listId && (g.opp || g.oppSkip)); g.opp = JSON.parse(JSON.stringify(src)); g.opp.units.forEach(u => u.uid = uid()); const map = {}; src.units.forEach((u, i) => map[u.uid] = g.opp.units[i].uid); g.opp.units.forEach(u => { if (u.lead) u.lead = map[u.lead] || null; });
+    g.names[1] = g.opp.name; saveGame(); if (!was && g.listId) { S.slideDs = true; window.scrollTo(0, 0); } render(); S.slideDs = false; toast(`Opponent: ${g.opp.name}`); return; }
+  else if (k === "glist") { const g = fixGame(S.game ||= blankGame()); const wasReady = !!(g.listId && (g.opp || g.oppSkip)); g.listId = t.value; const ml = S.lists.find(x => x.id === t.value); if (ml) g.names[0] = ml.name; saveGame(); if (!wasReady && g.listId && (g.opp || g.oppSkip)) { S.slideDs = true; window.scrollTo(0, 0); } render(); S.slideDs = false; return; }
   else if (k === "gdep" || k === "gpri" || k === "gtw" || k === "gpool" || k === "gfixed") {
     const g = fixGame(S.game ||= blankGame());
     if (k === "gdep") g.dep = t.value; else if (k === "gpri") g.pri = t.value; else if (k === "gtw") g.twist = t.value;
