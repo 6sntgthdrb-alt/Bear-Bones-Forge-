@@ -798,6 +798,10 @@ nav.tabs button.scrubhover{opacity:1 !important;color:var(--text);transform:tran
 nav.tabs button.scrubhover svg{stroke:var(--accent)}
 nav.tabs.scrubbing .tabind::before{width:70%;height:4px}
 #tabs{touch-action:pan-x;-webkit-touch-callout:none}
+.rtabs button{transition:transform .14s ease}
+.rtabs.scrubbing{touch-action:none;-webkit-user-select:none;user-select:none}
+.rtabs.scrubbing button{opacity:.6}
+.rtabs button.scrubhover{opacity:1 !important;transform:scale(1.08)}
 </style>
 </head>
 <body data-army="">
@@ -1804,6 +1808,12 @@ function fitStats(root){
 document.addEventListener("toggle", e => { if (e.target.open) fitStats(e.target); }, true);
 window.addEventListener("resize", () => { clearTimeout(window._fitT); window._fitT = setTimeout(() => fitStats(), 150); });
 const TAB_ORDER = ["lists", "build", "rules", "game", "data"];
+const RULE_TABS = ["core", "brief", "army", "det", "strat", "units", "marks"];
+/* Keep the Rules tab bar scrolled so the open tab is in view. */
+function showRTab(smooth, restore){ const bar = document.querySelector(".rtabs"); if (!bar) return; if (restore && S.rtabScroll != null) bar.scrollLeft = S.rtabScroll;
+  const b = bar.querySelector('[aria-pressed="true"]'); if (!b) return; const br = bar.getBoundingClientRect(), r = b.getBoundingClientRect();
+  if (r.left < br.left + 8 || r.right > br.right - 8) { const left = bar.scrollLeft + (r.left - br.left) - (br.width - r.width) / 2; S.rtabScroll = Math.max(0, left); bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" }); } }
+function goRules(k){ S.rulesTab = k; render(); window.scrollTo(0, 0); showRTab(true); }
 /* The marker in the bottom bar: sits under the current tab and slides with a swipe. */
 function tabInd(pos, anim){ const el = document.querySelector("#tabs .tabind"); if (!el || pos < 0) return;
   el.style.transition = anim ? "transform .25s cubic-bezier(.2,.8,.2,1)" : "none"; el.style.transform = `translateX(${pos * 100}%)`; }
@@ -1818,7 +1828,7 @@ function render(){
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
   window.scrollTo(0, st);
-  fitStats(m); measureBars();
+  fitStats(m); measureBars(); if (S.view === "rules") showRTab(false, true);
 }
 function measureBars(){ const t = $("#top"), n = document.querySelector("nav.tabs"); const r = document.documentElement.style;
   if (t) r.setProperty("--toph", t.offsetHeight + "px"); if (n) r.setProperty("--navh", n.offsetHeight + "px"); }
@@ -2095,7 +2105,7 @@ function viewRules(){
   return `<div class="stack">
     <div class="small muted">${l ? `Showing rules for <b style="color:var(--text)">${esc(l.name)}</b>` : `Rules for:`}</div>
     ${!l ? `<select id="rarmy" data-ch="rarmy" aria-label="Army">${armyOptions().map(([g, opts]) => `<optgroup label="${esc(g)}">${opts.map(o => `<option value="${esc(o.key)}"${S.rulesArmy===o.key?" selected":""}>${esc(o.name)}</option>`).join("")}</optgroup>`).join("")}</select>` : ""}
-    <div class="seg" role="group" aria-label="Rules section">${tabs.map(([k,t]) => `<button data-act="rtab" data-v="${k}" aria-pressed="${S.rulesTab===k}">${t}</button>`).join("")}</div>
+    <div class="seg rtabs" role="group" aria-label="Rules section">${tabs.map(([k,t]) => `<button data-act="rtab" data-v="${k}" aria-pressed="${S.rulesTab===k}">${t}</button>`).join("")}</div>
     ${body}</div>`;
 }
 /* Search: a unit matches by name, or by the name/text of its abilities, weapon abilities and keywords. Returns null (no match), "" (name match) or a hint. */
@@ -3072,7 +3082,7 @@ document.addEventListener("click", e => {
     case "briefwho": S.briefOpp = t.dataset.v === "opp"; render(); break;
     case "bdist": { S.bdist = Math.max(0, num(S.bdist ?? 12) + num(t.dataset.d)); const i = $("#bdist"); if (i) i.value = S.bdist; const el = $("#bdistres"), l2 = briefList(); if (el && l2) el.innerHTML = reachHtml(l2, S.bdist); break; }
     case "busedreset": { const l = briefList(); if (l) { S.used ||= LS.get("used", {}); S.used[l.id || "opp"] = {}; LS.set("used", S.used); render(); } break; }
-    case "rtab": S.rulesTab = t.dataset.v; render(); break;
+    case "rtab": if (S.scrubbed) break; goRules(t.dataset.v); break;
     case "import": $("#fileIn").click(); break;
     case "rule": showRule(t.dataset.k); break;
     case "synccheck": (async () => { try { S.sync.note = "Checking…"; render(); const docs = await Cloud.all(); const c = k => docs.filter(d => d.id.startsWith(k)).length;
@@ -3472,25 +3482,32 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     if (!st) return; const t = e.touches[0], dx = t.clientX - st.x, dy = t.clientY - st.y;
     if (st.edge && Math.sign(dx) !== st.edge && Math.abs(dx) > 8) { st = null; return; }
     if (!st.on) { if (Math.abs(dx) > (st.edge ? 10 : 16) && Math.abs(dx) > Math.abs(dy) * (st.edge ? 1.2 : 1.7)) st.on = true; else if (Math.abs(dy) > (st.edge ? 20 : 12)) { st = null; return; } else return; }
-    st.dx = dx; const i = TAB_ORDER.indexOf(S.view), edge = (dx > 0 && i <= 0) || (dx < 0 && i >= TAB_ORDER.length - 1);
-    tabInd(i + Math.max(edge ? -0.08 : -1, Math.min(edge ? 0.08 : 1, -dx / Math.max(160, innerWidth * 0.5))), false);
+    st.dx = dx; const i = TAB_ORDER.indexOf(S.view), ri = RULE_TABS.indexOf(S.rulesTab);
+    const inRules = S.view === "rules" && !st.edge && ri >= 0 && !((dx > 0 && ri <= 0) || (dx < 0 && ri >= RULE_TABS.length - 1));
+    const edge = !inRules && ((dx > 0 && i <= 0) || (dx < 0 && i >= TAB_ORDER.length - 1));
+    if (!inRules) tabInd(i + Math.max(edge ? -0.08 : -1, Math.min(edge ? 0.08 : 1, -dx / Math.max(160, innerWidth * 0.5))), false); else tabInd(i, false);
     const m = main(); m.style.transition = "none"; m.style.transform = `translateX(${dx * (edge ? 0.12 : 0.5)}px)`; m.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / innerWidth * (edge ? 0.2 : 0.6)));
   }, { passive:true });
   const end = () => {
     if (!st) return; const s0 = st; st = null; if (!s0.on) return;
     const m = main(), i = TAB_ORDER.indexOf(S.view), next = s0.dx < 0 ? i + 1 : i - 1, fast = Math.abs(s0.dx) / Math.max(1, Date.now() - s0.t) > 0.5;
-    const go = next >= 0 && next < TAB_ORDER.length && (s0.edge ? Math.abs(s0.dx) > 36 : (Math.abs(s0.dx) > Math.min(110, innerWidth * 0.22) || (Math.abs(s0.dx) > 50 && fast)));
+    const ri = RULE_TABS.indexOf(S.rulesTab), nr = s0.dx < 0 ? ri + 1 : ri - 1;
+    let act = null, mainMove = false;
+    if (S.view === "rules" && !s0.edge && ri >= 0 && nr >= 0 && nr < RULE_TABS.length) act = () => goRules(RULE_TABS[nr]);
+    else if (next >= 0 && next < TAB_ORDER.length) { act = () => goView(TAB_ORDER[next]); mainMove = true; }
+    const go = act && (s0.edge ? Math.abs(s0.dx) > 36 : (Math.abs(s0.dx) > Math.min(110, innerWidth * 0.22) || (Math.abs(s0.dx) > 50 && fast)));
     if (!go) { m.style.transition = "transform .2s ease, opacity .2s"; m.style.transform = ""; m.style.opacity = ""; tabInd(i, true); return; }
-    tabInd(next, true);
+    if (mainMove) tabInd(next, true);
     const dir = s0.dx < 0 ? -1 : 1;
     const q = s0.edge ? 0.6 : 1;
     m.style.transition = `transform ${.15 * q}s ease-in, opacity ${.15 * q}s`; m.style.transform = `translateX(${dir * 45}%)`; m.style.opacity = "0";
-    setTimeout(() => { goView(TAB_ORDER[next]); m.style.transition = "none"; m.style.transform = `translateX(${-dir * 35}%)`; m.style.opacity = "0";
+    setTimeout(() => { act(); m.style.transition = "none"; m.style.transform = `translateX(${-dir * 35}%)`; m.style.opacity = "0";
       requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = `transform ${.22 * q}s cubic-bezier(.2,.8,.2,1), opacity ${.22 * q}s`; m.style.transform = ""; m.style.opacity = ""; })); }, 150 * q);
   };
   document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st && st.on) { const m = main(); m.style.transition = "transform .2s"; m.style.transform = ""; m.style.opacity = ""; tabInd(TAB_ORDER.indexOf(S.view), true); } st = null; });
 })();
 
+document.addEventListener("scroll", e => { if (e.target && e.target.classList && e.target.classList.contains("rtabs")) S.rtabScroll = e.target.scrollLeft; }, true);
 /* ============ scrub the bottom bar: hold and slide along it, the page follows your thumb ============ */
 (function(){
   let sc = null;
@@ -3506,11 +3523,11 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     if (e.touches.length !== 1 || !e.target.closest("#tabs")) return;
     const t = e.touches[0]; sc = { x:t.clientX, y:t.clientY, i:slot(t.clientX), on:false, timer:null };
     // holding still for a moment also starts scrubbing
-    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; nav().classList.add("scrubbing"); hover(sc.i); mark(sc.x); } }, 260);
+    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; nav().classList.add("scrubbing"); hover(sc.i); mark(sc.x); show(sc.i, TAB_ORDER.indexOf(S.view)); } }, 260);
   }, { passive:true });
   document.addEventListener("touchmove", e => {
     if (!sc) return; const t = e.touches[0];
-    if (!sc.on) { if (Math.abs(t.clientX - sc.x) > 8) { sc.on = true; clearTimeout(sc.timer); nav().classList.add("scrubbing"); } else return; }
+    if (!sc.on) { if (Math.abs(t.clientX - sc.x) > 8) { sc.on = true; clearTimeout(sc.timer); nav().classList.add("scrubbing"); show(sc.i, TAB_ORDER.indexOf(S.view)); } else return; }
     e.preventDefault(); mark(t.clientX);
     const i = slot(t.clientX); hover(i); if (i !== sc.i) { const from = sc.i; sc.i = i; show(i, from); }
   }, { passive:false });
@@ -3518,6 +3535,43 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     nav().classList.remove("scrubbing"); hover(-1); tabInd(TAB_ORDER.indexOf(S.view), true);
     S.scrubbed = true; setTimeout(() => S.scrubbed = false, 350); };
   document.addEventListener("touchend", end); document.addEventListener("touchcancel", end);
+})();
+
+/* ============ scrub the Rules tab bar the same way ============ */
+(function(){
+  let sc = null;
+  const bar = () => document.querySelector(".rtabs");
+  const under = x => { const b = bar(); if (!b) return null; const r = b.getBoundingClientRect(); const el = document.elementFromPoint(Math.max(r.left + 2, Math.min(r.right - 2, x)), r.top + r.height / 2); return el && el.closest('[data-act="rtab"]'); };
+  const hover = k => document.querySelectorAll(".rtabs button").forEach(b => b.classList.toggle("scrubhover", b.dataset.v === k));
+  const nudge = () => { if (!sc || !sc.on) return; const b = bar(); if (b) { const r = b.getBoundingClientRect(), z = 40;
+      const v = sc.x < r.left + z ? -(r.left + z - sc.x) / 3 : sc.x > r.right - z ? (sc.x - (r.right - z)) / 3 : 0;
+      if (v) { b.scrollLeft += v; S.rtabScroll = b.scrollLeft; pick(); } }
+    sc.raf = requestAnimationFrame(nudge); };
+  const pick = () => { const btn = under(sc.x); if (!btn) return; const k = btn.dataset.v; hover(k);
+    if (k !== S.rulesTab) { const from = RULE_TABS.indexOf(S.rulesTab), to = RULE_TABS.indexOf(k), m = $("#main");
+      S.rulesTab = k; S.rtabScroll = bar() ? bar().scrollLeft : S.rtabScroll; render(); window.scrollTo(0, 0); hover(k);
+      m.style.transition = "none"; m.style.transform = `translateX(${(to > from ? 1 : -1) * 12}%)`; m.style.opacity = ".5";
+      requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .16s ease-out, opacity .16s"; m.style.transform = ""; m.style.opacity = ""; }));
+      if (navigator.vibrate) try { navigator.vibrate(8); } catch {} } };
+  document.addEventListener("touchstart", e => {
+    const b = e.target.closest && e.target.closest(".rtabs"); if (!b || e.touches.length !== 1) return;
+    const t = e.touches[0], node = e.target; sc = { x:t.clientX, y:t.clientY, on:false, node };
+    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; b.classList.add("scrubbing"); pick(); nudge(); } }, 260);
+    // listen on the touched element itself: the bar is rebuilt as tabs change, and events stay with the original element
+    const move = ev => { if (!sc) return; const p = ev.touches[0]; sc.x = p.clientX;
+      if (!sc.on) { if (Math.abs(p.clientX - sc.sx0) > 6 && Date.now() - sc.t0 > 0) { /* plain horizontal scroll of the bar: leave it alone */ } return; }
+      ev.preventDefault(); pick(); };
+    const end = () => { node.removeEventListener("touchmove", move); node.removeEventListener("touchend", end); node.removeEventListener("touchcancel", end);
+      if (!sc) return; const s0 = sc; sc = null; clearTimeout(s0.timer); cancelAnimationFrame(s0.raf); if (!s0.on) return;
+      document.querySelectorAll(".rtabs").forEach(x => x.classList.remove("scrubbing")); hover(null); showRTab(true);
+      S.scrubbed = true; setTimeout(() => S.scrubbed = false, 350); };
+    sc.sx0 = t.clientX; sc.t0 = Date.now();
+    node.addEventListener("touchmove", move, { passive:false }); node.addEventListener("touchend", end); node.addEventListener("touchcancel", end);
+    // moving straight away scrolls the bar as normal; holding first starts the scrub
+    const cancelIfScroll = ev => { if (!sc || sc.on) { node.removeEventListener("touchmove", cancelIfScroll); return; }
+      if (Math.abs(ev.touches[0].clientX - sc.sx0) > 8 || Math.abs(ev.touches[0].clientY - sc.y) > 8) { clearTimeout(sc.timer); sc = null; node.removeEventListener("touchmove", cancelIfScroll); } };
+    node.addEventListener("touchmove", cancelIfScroll, { passive:true });
+  }, { passive:true });
 })();
 
 /* ============ boot ============ */
