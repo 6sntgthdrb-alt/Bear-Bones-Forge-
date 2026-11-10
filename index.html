@@ -564,6 +564,11 @@ input.pl-opp-in{border-color:color-mix(in srgb,var(--pl-opp) 55%,var(--line));ba
 .trk-v{font:700 1.2rem var(--body);min-width:38px;text-align:center}
 .trk-v small{font-size:.75rem;color:var(--muted);font-weight:500}
 .mcard summary .pill{margin-left:auto}
+
+.segwrap{flex-wrap:wrap;overflow:visible}
+.segwrap button{flex:1 1 auto;min-width:30%}
+.vptot{text-align:center;font-size:1.9rem;padding-top:6px;border-top:2px solid var(--line)}
+.tot-l{padding-top:10px;border-top:2px solid var(--line)}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -995,7 +1000,7 @@ function unitLinesFor(army, lines){
   const hits = [];
   lines.forEach((line, i) => {
     const m = line.match(PTS_RE) || line.match(/\[(\d{2,4})\]/); if (!m) return;
-    if (/strike force|incursion|onslaught|combat patrol/i.test(line)) return;
+    if (/^[\s+=*#-]*(battle size:\s*)?(strike force|incursion|onslaught|combat patrol)\b/i.test(line)) return;
     const L = lc(line), before = L.slice(0, L.indexOf(lc(m[0])) + 1 || L.length);
     const f = names.find(x => { const k = before.indexOf(x.n); return k >= 0 && !/[a-z]/.test(before[k + x.n.length] || " ") && !/[a-z]/.test(before[k-1] || " "); });
     if (f) hits.push({ i, id:f.id, pts:+m[1] });
@@ -1019,7 +1024,7 @@ function parseListText(text){
   let points = sz ? ({ incursion:1000, "strike force":2000, onslaught:3000 })[sz[1].toLowerCase()] : 2000;
   const title = lines.map(x => x.trim()).find(x => x && !/^(\+|=|-)+$/.test(x)) || "";
   const units = hits.map((h, n) => {
-    const block = lines.slice(h.i + 1, n + 1 < hits.length ? hits[n+1].i : lines.length).filter(x => x.trim() && !/^[A-Z][A-Z &]+$/.test(x.trim()) && !/built with (?:list forge|bear bones forge)|exported with|data version/i.test(x) && !PTS_RE.test(x));
+    const block = lines.slice(h.i + 1, n + 1 < hits.length ? hits[n+1].i : lines.length).filter(x => x.trim() && !/^[A-Z][A-Z &]+$/.test(x.trim()) && !/built with (?:list forge|bear bones forge)|exported with|created with|data version/i.test(x) && (!PTS_RE.test(x) || /enhancement/i.test(x)));
     const all = lc(lines[h.i] + "\n" + block.join("\n"));
     const u = { uid:uid(), ds:h.id, name:D.ds[h.id].name, line:null, enh:null, warlord:/\bwarlord\b/.test(all), lead:null, opts:[], wg:{}, notes:"" };
     const e = enhs.filter(x => all.includes(lc(x.name))).sort((a,b) => b.name.length - a.name.length)[0];
@@ -1030,9 +1035,13 @@ function parseListText(text){
     const bySize = sizeM && rows.find(r => parseInt(plain(r.label)) === +sizeM[1]);
     u.line = (byPts || bySize || rows[0] || {}).line || null;
     addonRows(h.id).forEach(ad => { if (all.includes(lc(plain(ad.label)))) (u.addons ||= {})[ad.line] = 1; });
+    if (!byPts && !u.addons && addonRows(h.id).length) { /* work out add-on models from the points (e.g. Simple format) */
+      const ads = addonRows(h.id), want = h.pts - (e ? num(e.cost) : 0);
+      for (const r of rows) { for (let mask = 1; mask < (1 << ads.length); mask++) { const pick = ads.filter((_, i) => mask & (1 << i)); if (r.cost + pick.reduce((x, a) => x + a.cost, 0) === want) { u.line = r.line; u.addons = {}; pick.forEach(a => u.addons[a.line] = 1); break; } } if (u.addons) break; }
+    }
     if (u.addons && !byPts) { const base = h.pts - (e ? num(e.cost) : 0) - addonsOf(u).reduce((x, ad) => x + ad.cost, 0); const m2 = rows.find(r => r.cost === base); if (m2) u.line = m2.line; }
     const stems = new Set((D.wg[h.id]||[]).map(w => wStem(w.name)).filter(Boolean));
-    const blockStems = stemsIn(block.join(" ; "), stems);
+    const blockStems = stemsIn((lines[h.i].replace(/^[^:\]]*[\]]?\s*:?/, "") + " ; " + block.join(" ; ")), stems);
     optsOf(h.id).forEach(o => { if (!o.choices.length) return;
       const keep = o.keep ? stemsIn(o.keep, stems) : new Set();
       const idx = o.choices.findIndex(c => [...stemsIn(c, stems)].some(st => blockStems.has(st) && !keep.has(st)));
@@ -1109,17 +1118,75 @@ function renderCollection(){
 }
 
 /* ============ export formats ============ */
+/* ---- extra text formats: Tournament, Short, Simple (plus options) ---- */
+const SHARE_FMTS = [["qr","QR / link"],["bb","Bear Bones"],["gw","Warhammer app"],["tour","Tournament"],["nr","New Recruit"],["short","Short"],["simple","Simple"]];
+function shareOpts(){ return Object.assign({ constant:true, header:true, discord:false, player:"", team:"" }, S.shareOpt || LS.get("shareOpt", {})); }
+function loadoutNames(u){
+  const st = unitWeapons(u), seen = new Set(), out = [];
+  (D.wg[u.ds]||[]).forEach(w => { const nm = w.name.replace(/\s+[–-]\s+.*$/, "").trim(); if ((!st || st.has(wStem(w.name))) && !seen.has(lc(nm))) { seen.add(lc(nm)); out.push(nm); } });
+  return out;
+}
+function unitWounds(u){ return Math.max(1, num((D.models[u.ds]||[])[0]?.w) || 1) * Math.max(1, unitModels(u)); }
+function exportExtra(l, fmt, o){
+  const v = validate(l), units = l.units.filter(u => D.ds[u.ds]), out = [];
+  const fac = D.factions.find(f => f.id === fidOf(l.army));
+  const allegName = { imperium:"Imperium", chaos:"Chaos", xenos:"Xenos" }[allegOf(l.army)];
+  const facLine = [allegName, fac ? (fac.id === "SM" ? "Adeptus Astartes" : fac.name) : "", chapterOf(l.army) ? armyName(l.army, l) : ""].filter(Boolean).join(" - ");
+  const rules = l.det ? detRules(l.army, l.det) : [];
+  const detLine = l.det ? l.det.name + (rules[0] ? ` (${rules[0].name})` : "") : "None";
+  const chars = units.filter(u => D.kwSet[u.ds]?.has("CHARACTER"));
+  const wl = units.find(u => u.warlord);
+  const sz = u => { const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; return r ? plain(r.label) : ""; };
+  const pts = u => unitCost(u) + enhCost(u);
+  const gear = u => {
+    const cap = x => x.charAt(0).toUpperCase() + x.slice(1);
+    const one = unitModels(u) === 1, picks = wgPicks(u).map(p => cap(p.short.replace(/^1\s+/, "")));
+    const base = o.constant ? loadoutNames(u) : picks;
+    return [...addonsOf(u).map(a => "+ " + plain(a.label)), ...base.map(n => (one ? "1x " : "") + n)];
+  };
+  const extras = u => { const e = u.enh && D.enhById[u.enh], ld = u.lead && l.units.find(x => x.uid === u.lead);
+    return [u.warlord ? "Warlord" : "", e ? `Enhancement: ${e.name} (+${num(e.cost)} pts)` : "", ld ? `Attached to: ${unitLabel(l, ld)}` : ""].filter(Boolean); };
+  if (o.player) out.push(`Player: ${o.player}`); if (o.team) out.push(`Team: ${o.team}`); if (o.player || o.team) out.push("");
+  if (fmt === "tour") {
+    if (o.header) {
+      const bid = units.filter(u => D.kwSet[u.ds]?.has("VEHICLE") || D.kwSet[u.ds]?.has("MONSTER")).map(u => { const w = unitWounds(u); return 2 + (w >= 15 ? 2 : 0) + (w >= 20 ? 2 : 0); });
+      const bc = {}; bid.forEach(x => bc[x] = (bc[x]||0) + 1);
+      const line = "+".repeat(47);
+      out.push(line, `+ FACTION KEYWORD: ${facLine}`, `+ DETACHMENT: ${detLine}`, `+ TOTAL ARMY POINTS: ${v.total}pts`, "+",
+        `+ WARLORD: ${wl ? "Char" + (chars.indexOf(wl) + 1) + ": " + D.ds[wl.ds].name : "None"}`, `+ NUMBER OF UNITS: ${units.length}`,
+        `+ SECONDARY: - Bring It Down: ${Object.keys(bc).sort().map(k => `(${bc[k]}x${k})`).join(" + ") || "none"} - Assassination: ${chars.length} Character${chars.length === 1 ? "" : "s"}`, line, "");
+    }
+    const grp = u => { const g = roleOf(u.ds); return g === "Epic Heroes" || g === "Characters" ? "CHARACTER" : g === "Battleline" ? "BATTLELINE" : g === "Dedicated Transports" ? "DEDICATED TRANSPORT" : "OTHER DATASHEETS"; };
+    ["CHARACTER","BATTLELINE","DEDICATED TRANSPORT","OTHER DATASHEETS"].forEach(g => { const us = units.filter(u => grp(u) === g); if (!us.length) return; out.push(g, "");
+      us.forEach(u => { const z = sz(u), many = unitModels(u) > 1;
+        out.push(`${chars.includes(u) ? "Char" + (chars.indexOf(u) + 1) + ": " : ""}${D.ds[u.ds].name}${many && z ? " (" + z + ")" : ""} (${pts(u)} pts)`);
+        [...gear(u), ...extras(u)].forEach(x => out.push("• " + x)); out.push(""); }); });
+  } else if (fmt === "short") {
+    if (o.header) out.push(`${l.name} - ${facLine} - ${detLine} - ${v.total}/${l.points} pts`, "");
+    units.forEach(u => { const z = sz(u), bits = [...extras(u).map(x => x.replace(/ \(\+\d+ pts\)/, "")), ...gear(u)];
+      out.push(`${D.ds[u.ds].name}${unitModels(u) > 1 && z ? " x" + unitModels(u) : ""} (${pts(u)})${bits.length ? ": " + bits.join(", ") : ""}`); });
+  } else {
+    if (o.header) out.push(`${l.name} (${v.total} pts)`, `${armyName(l.army, l)}${l.det ? " · " + l.det.name : ""}`, "");
+    const m = new Map(); units.forEach(u => { const k = D.ds[u.ds].name; const c = m.get(k) || { n:0, p:0 }; c.n++; c.p += pts(u); m.set(k, c); });
+    [...m].forEach(([k, c]) => out.push(`${c.n > 1 ? c.n + "x " : ""}${k} (${c.p} pts)`));
+  }
+  out.push("", "Created with Bear Bones Forge");
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
 function exportText(l, fmt){
+  if (fmt === "tour" || fmt === "short" || fmt === "simple") return exportExtra(l, fmt, shareOpts());
   if (fmt === "bb") return listText(l);
   const v = validate(l), sz = SIZES.find(x => x.pts === l.points), fac = D.factions.find(f => f.id === fidOf(l.army));
   const r_ = u => { const rows = costRows(u.ds); return rows.find(x => x.line === u.line) || rows[0]; };
-  const picks = u => [...addonsOf(u).map(a => plain(a.label)), ...wgPicks(u).map(p => p.short.replace(/^1\s+/, ""))];
+  const o_ = shareOpts();
+  const picks = u => [...addonsOf(u).map(a => plain(a.label)), ...(o_.constant ? loadoutNames(u) : wgPicks(u).map(p => p.short.replace(/^1\s+/, "")))];
   const grp = u => { const g = roleOf(u.ds); return g === "Epic Heroes" || g === "Characters" ? "CHARACTERS" : g === "Battleline" ? "BATTLELINE" : g === "Dedicated Transports" ? "DEDICATED TRANSPORTS" : "OTHER DATASHEETS"; };
   const order = ["CHARACTERS","BATTLELINE","DEDICATED TRANSPORTS","OTHER DATASHEETS"];
   const units = l.units.filter(u => D.ds[u.ds]);
   const out = [];
+  if (o_.player) out.push(`Player: ${o_.player}`); if (o_.team) out.push(`Team: ${o_.team}`); if (o_.player || o_.team) out.push("");
   if (fmt === "gw") {
-    out.push(`${l.name} (${v.total} points)`, "", fac ? fac.name : "", ...(chapterOf(l.army) ? [armyName(l.army, l)] : []), `${sz ? sz.name : "Custom"} (${l.points} points)`, l.det ? l.det.name : "", "");
+    if (o_.header) out.push(`${l.name} (${v.total} points)`, "", fac ? fac.name : "", ...(chapterOf(l.army) ? [armyName(l.army, l)] : []), `${sz ? sz.name : "Custom"} (${l.points} points)`, l.det ? l.det.name : "", "");
     order.forEach(g => { const us = units.filter(u => grp(u) === g); if (!us.length) return; out.push("", g, "");
       us.forEach(u => { out.push(`${D.ds[u.ds].name} (${unitCost(u)+enhCost(u)} points)`);
         if (u.warlord) out.push("  • Warlord");
@@ -1130,7 +1197,7 @@ function exportText(l, fmt){
         out.push(""); }); });
     out.push("Exported with Bear Bones Forge");
   } else {
-    out.push(`+++ ${l.name} (${fac ? fac.name : armyName(l.army, l)}${chapterOf(l.army) ? " – " + armyName(l.army, l) : ""}) [${v.total} pts] +++`, "",
+    if (o_.header) out.push(`+++ ${l.name} (${fac ? fac.name : armyName(l.army, l)}${chapterOf(l.army) ? " – " + armyName(l.army, l) : ""}) [${v.total} pts] +++`, "",
       `+ Configuration +`, `Battle Size: ${sz ? sz.name : "Custom"} (${l.points} Point limit)`, `Detachment: ${l.det ? l.det.name : "None"}`, "");
     order.forEach(g => { const us = units.filter(u => grp(u) === g); if (!us.length) return; out.push(`++ ${g.charAt(0) + g.slice(1).toLowerCase()} ++`, "");
       us.forEach(u => { const bits = []; if (u.warlord) bits.push("Warlord"); const e = u.enh && D.enhById[u.enh]; if (e) bits.push(`Enhancement: ${e.name}`);
@@ -1760,6 +1827,13 @@ function stemsIn(text, stems){
     const re = new RegExp("(^|[^a-z])" + st.replace(/s$/, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "s?(?=[^a-z]|$)", "g");
     if (re.test(t)) { found.add(st); t = t.replace(re, m => m.replace(/[a-z']/g, " ")); }
   });
+  /* Wahapedia sometimes shortens a weapon in the loadout text ("Perdition" for "Perdition Pistol"): try the name without its last word */
+  [...stems].filter(st => !found.has(st)).forEach(st => {
+    const short = st.replace(/\s+(pistol|pistols|rifle|gun|guns|cannon|blade|sword|launcher|axe|hammer|staff|spear|claws?|fists?)$/, "");
+    if (short === st || short.length < 4 || [...stems].some(o => o !== st && o.startsWith(short + " "))) return;
+    const re = new RegExp("(^|[^a-z])" + short.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=[^a-z]|$)", "g");
+    if (re.test(t)) { found.add(st); t = t.replace(re, m => m.replace(/[a-z']/g, " ")); }
+  });
   return found;
 }
 function unitWeapons(u){
@@ -2008,22 +2082,22 @@ function viewGame(){
     </div>`;
   }
   return `<div class="stack">
+    <div class="card"><div class="sec-h">Battle round</div>
+      <div class="stepper"><button data-act="ground" data-d="-1" aria-label="Previous round">−</button><span class="big num">${g.round}</span><button data-act="ground" data-d="1" aria-label="Next round">+</button></div></div>
     ${battleHtml(g)}
-    ${D ? gameDsHtml(g) : ""}
     <div class="row">
       ${gOrder(g).map(p => `<div class="card grow ${p === 0 ? "pl-me" : "pl-opp"}" style="text-align:center;flex-basis:140px"><input type="text" data-in="gname" data-p="${p}" value="${esc(g.names[p])}" aria-label="Player name" style="text-align:center;font-weight:600">${g.role ? `<div class="rolelab" style="margin-top:4px">${roleOf2(g, p)}</div>` : ""}
-        <div class="sec-h" style="margin-top:8px">Total VP</div><div class="big num" id="tot${p}">${tot(p)}</div>
         <div class="sec-h" style="margin-top:8px">Command points</div>
         <div class="stepper"><button data-act="gcp" data-p="${p}" data-d="-1" aria-label="Spend CP">−</button><span class="big num">${g.cp[p]}</span><button data-act="gcp" data-p="${p}" data-d="1" aria-label="Gain CP">+</button></div></div>`).join("")}
     </div>
-    <div class="card"><div class="sec-h">Battle round</div>
-      <div class="stepper"><button data-act="ground" data-d="-1" aria-label="Previous round">−</button><span class="big num">${g.round}</span><button data-act="ground" data-d="1" aria-label="Next round">+</button></div></div>
     ${setup}
+    ${D ? gameDsHtml(g) : ""}
     <div class="card">
       <div class="sec-h">Victory points by round</div>
       <div class="tracker">
         <span></span>${gOrder(g).map(p => `<span class="hd ${p === 0 ? "pl-me-t" : "pl-opp-t"}" data-pn="${p}">${esc(g.names[p])}${g.role ? `<small class="rolelab">${roleOf2(g, p)}</small>` : ""}</span>`).join("")}
         ${[0,1,2,3,4].map(r => `<span class="hd" style="text-align:left">R${r+1} primary</span>${gOrder(g).map(p => cell("vp",p,r)).join("")}<span class="hd" style="text-align:left">R${r+1} secondary</span>${gOrder(g).map(p => cell("sec",p,r)).join("")}`).join("")}
+        <span class="hd tot-l" style="text-align:left">Total VP</span>${gOrder(g).map(p => `<span class="big num vptot ${p === 0 ? "pl-me-t" : "pl-opp-t"}" id="tot${p}">${tot(p)}</span>`).join("")}
       </div>
     </div>
     <label class="f" for="gn">Game notes<textarea id="gn" data-in="gm" data-k="notes" placeholder="Things to remember">${esc(g.notes)}</textarea></label>
@@ -2333,6 +2407,7 @@ document.addEventListener("click", e => {
     case "close": closeSheet(t.dataset.kind); if (t.dataset.kind === "coll") render(); break;
     case "share": shareList(); break;
     case "copytext": copyText($("#sharetext").value); break;
+    case "copypart": copyText((S.shareParts || [])[+t.dataset.i] || ""); break;
     case "sharefmt": S.shareFmt = t.dataset.v; shareList(); break;
     case "usizemin": case "usizemax": { const l2 = curList(), u = l2 && l2.units.find(x => x.uid === t.dataset.u); if (!u) break; const rows = costRows(u.ds); if (!rows.length) break; u.line = (act === "usizemin" ? rows[0] : rows[rows.length-1]).line; saveList(l2); render(); break; }
     case "collection": { const l2 = curList(); openCollection(l2 ? l2.army : S.rulesArmy); break; }
@@ -2472,6 +2547,7 @@ document.addEventListener("input", e => {
   else if (k === "own") { const v = t.value.trim(); if (v === "") delete S.collection[t.dataset.id]; else S.collection[t.dataset.id] = Math.max(0, parseInt(v) || 0); saveCollection(); clearTimeout(S.ownT); S.ownT = setTimeout(() => { if (S.view === "build" && !$("#collres")) { const f = document.activeElement && document.activeElement.id; render(); if (f) { const el = document.getElementById(f); if (el) { el.focus(); el.setSelectionRange && el.setSelectionRange(99,99); } } } }, 700); }
   else if (k === "collq") { S.collQ = t.value; renderCollection(); }
   else if (k === "pickq") { S.pickQ = t.value; renderPickResults(); }
+  else if (k === "shareopt" && t.type !== "checkbox") { S.shareOpt = Object.assign(shareOpts(), { [t.dataset.k]: t.value }); LS.set("shareOpt", S.shareOpt); clearTimeout(S.shT); S.shT = setTimeout(() => { const l2 = curList(); if (!l2) return; const txt = exportText(l2, S.shareFmt); const parts = shareOpts().discord ? splitDiscord(txt) : [txt]; if (parts.length === (S.shareParts||[]).length) { S.shareParts = parts; parts.forEach((p2, i) => { const ta = $("#sharetext" + (i ? i : "")); if (ta) ta.value = p2; }); } else { S.shareOptsOpen = true; shareList(); } }, 300); return; }
   else if (k === "armyq") { S.armyQ = t.value; const el = $("#armyres"); if (el && l) el.innerHTML = armyResHtml(l); }
   else if (k === "siteurl") { S.settings.siteUrl = t.value.trim(); LS.set("settings", S.settings); clearTimeout(S.qrT); S.qrT = setTimeout(renderShareQR, 600); }
   else if (k === "addq") { S.addQ = t.value; const r = searchIds(curList().army, t.value, S.addOpen); $("#addres").innerHTML = dsRows(r.ids, true, r.hints); }
@@ -2520,6 +2596,7 @@ document.addEventListener("change", e => {
   else if (k === "rarmy") { S.rulesArmy = t.value; LS.set("rulesArmy", t.value); render(); return; }
   else if (k === "look") { S.settings[t.dataset.k] = t.checked; LS.set("settings", S.settings); applyMode(); render(); return; }
   else if (k === "cmpa" || k === "cmpb") { S[k === "cmpa" ? "cmpA" : "cmpB"] = t.value; openSheet("compare", "Compare lists", compareHtml()); return; }
+  else if (k === "shareopt" && t.type === "checkbox") { S.shareOpt = Object.assign(shareOpts(), { [t.dataset.k]: t.checked }); LS.set("shareOpt", S.shareOpt); S.shareOptsOpen = true; shareList(); return; }
   else if (k === "legends") { S.settings.legends = t.checked; LS.set("settings", S.settings); render(); return; }
   if (l) saveList(l);
   render();
@@ -2608,15 +2685,26 @@ $("#fileIn").addEventListener("change", e => { const f = [...e.target.files]; e.
 function shareList(){
   const l = curList(); if (!l) return;
   const fmt = S.shareFmt || "qr";
-  if (fmt === "qr") {
-    openSheet("share", "Share list", `<div class="seg" role="group" aria-label="Format">${[["qr","QR / link"],["bb","Text"],["gw","Warhammer app"],["nr","New Recruit"]].map(([k,t]) => `<button data-act="sharefmt" data-v="${k}" aria-pressed="${fmt===k}">${t}</button>`).join("")}</div><div id="qrarea" class="stack"><div class="small muted">Making your QR code…</div></div>`);
-    renderShareQR(); return;
-  }
-  const txt = exportText(l, fmt);
-  openSheet("share", "Share list", `<div class="seg" role="group" aria-label="Format">${[["qr","QR / link"],["bb","Text"],["gw","Warhammer app"],["nr","New Recruit"]].map(([k,t]) => `<button data-act="sharefmt" data-v="${k}" aria-pressed="${fmt===k}">${t}</button>`).join("")}</div>
-    <p class="small muted">${fmt === "bb" ? "Copy this and send it to your opponent in Messages. It's plain text, so they don't need the app." : fmt === "gw" ? "Laid out like an export from the official Warhammer app, for tournaments or friends who use it." : "Laid out like a New Recruit text export."}</p>
-    <textarea id="sharetext" readonly style="min-height:320px;font-size:.85rem;font-family:ui-monospace,Menlo,monospace">${esc(txt)}</textarea>
-    <button class="btn primary" data-act="copytext">Copy to clipboard</button>`);
+  const seg = `<div class="seg segwrap" role="group" aria-label="Format">${SHARE_FMTS.map(([k,t]) => `<button data-act="sharefmt" data-v="${k}" aria-pressed="${fmt===k}">${t}</button>`).join("")}</div>`;
+  if (fmt === "qr") { openSheet("share", "Share list", seg + `<div id="qrarea" class="stack"><div class="small muted">Making your QR code…</div></div>`); renderShareQR(); return; }
+  const o = shareOpts(), txt = exportText(l, fmt);
+  const help = { bb:"Easy to read in Messages. Plain text, so your opponent doesn't need the app.", gw:"Laid out like an export from the official Warhammer app.", tour:"Tournament layout, with a header showing your faction, detachment, warlord, unit count and how many points you give up to Bring It Down and Assassination.", nr:"Laid out like a New Recruit text export.", short:"One line per unit. Handy for quick messages.", simple:"Just unit names and points, with duplicates grouped." }[fmt];
+  const chk = (k, label) => `<label class="check"><input type="checkbox" data-ch="shareopt" data-k="${k}"${o[k] ? " checked" : ""}><span>${label}</span></label>`;
+  const opts = fmt === "bb" ? "" : `<details class="card"${S.shareOptsOpen ? " open" : ""} data-keep="shareopts"><summary><b>Options</b></summary><div class="stack" style="margin-top:6px;gap:4px">
+    ${fmt !== "simple" ? chk("constant", "Constant selections <span class='muted small'>(include each unit's standard wargear, not just what you changed)</span>") : ""}
+    ${chk("header", "Header")}${chk("discord", "Split for Discord <span class='muted small'>(2,000 characters per message)</span>")}
+    <div class="row"><label class="f grow">Player name<input type="text" data-in="shareopt" data-k="player" value="${esc(o.player)}"></label><label class="f grow">Team name<input type="text" data-in="shareopt" data-k="team" value="${esc(o.team)}"></label></div></div></details>`;
+  const parts = o.discord && fmt !== "bb" ? splitDiscord(txt) : [txt];
+  S.shareParts = parts;
+  openSheet("share", "Share list", seg + `<p class="small muted" style="margin:0">${help}</p>${opts}
+    <div class="small muted">${txt.length.toLocaleString()} characters${parts.length > 1 ? ` · ${parts.length} messages` : ""}</div>
+    ${parts.map((p, i) => `${parts.length > 1 ? `<div class="sec-h">Message ${i + 1} of ${parts.length}</div>` : ""}<textarea id="sharetext${i ? i : ""}" readonly style="min-height:${parts.length > 1 ? 200 : 320}px;font-size:.85rem;font-family:ui-monospace,Menlo,monospace">${esc(p)}</textarea>
+      <button class="btn${i ? "" : " primary"}" data-act="copypart" data-i="${i}">Copy${parts.length > 1 ? ` message ${i + 1}` : " to clipboard"}</button>`).join("")}`);
+}
+function splitDiscord(txt, max = 1990){
+  const out = []; let cur = "";
+  txt.split("\n").forEach(line => { if ((cur + "\n" + line).length > max && cur) { out.push(cur); cur = line; } else cur = cur ? cur + "\n" + line : line; });
+  if (cur) out.push(cur); return out;
 }
 async function copyText(txt){
   try { await navigator.clipboard.writeText(txt); toast("Copied. Paste it into Messages."); }
