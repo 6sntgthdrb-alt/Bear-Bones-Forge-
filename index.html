@@ -569,6 +569,13 @@ input.pl-opp-in{border-color:color-mix(in srgb,var(--pl-opp) 55%,var(--line));ba
 .segwrap button{flex:1 1 auto;min-width:30%}
 .vptot{text-align:center;font-size:1.9rem;padding-top:6px;border-top:2px solid var(--line)}
 .tot-l{padding-top:10px;border-top:2px solid var(--line)}
+
+.fold > summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.fold > summary::-webkit-details-marker{display:none}
+.fold > summary::after{content:"▾";margin-left:auto;font-size:1rem;transition:transform .2s}
+.fold:not([open]) > summary::after{transform:rotate(-90deg)}
+.fold[open] > summary{margin-bottom:6px}
+.battle-missions > .card{background:color-mix(in srgb,var(--panel2) 60%,var(--panel))}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -1977,7 +1984,8 @@ function oppHtml(g){
         ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true })}</div></details>`; }).join("")}
     <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div></details>`;
 }
-function battleHtml(g){
+function keepOpen(k){ return ` data-keep="${k}"${S.keep[k] === false ? "" : " open"}`; }
+function battleHtml(g, setup = ""){
   const lists = S.lists;
   const { l, list } = stratsNow(g);
   const who = turnName(g.turn === "me" ? g.names[0] : g.names[1]).replace(/ turn$/, "");
@@ -1990,12 +1998,13 @@ function battleHtml(g){
     <div class="seg" role="group" aria-label="Whose turn">${gOrder(g).map(p => p === 0 ? `<button class="pl-me-b" data-act="gturn" data-v="me" aria-pressed="${g.turn==="me"}">${turnName(g.names[0])}</button>` : `<button class="pl-opp-b" data-act="gturn" data-v="opp" aria-pressed="${g.turn==="opp"}">${turnName(g.names[1])}</button>`).join("")}</div>
     <div class="phases" role="group" aria-label="Phase">${PHASES.map((p,i) => `<button data-act="gphase" data-v="${i}" aria-pressed="${g.phase===i}" aria-label="${p} phase">${["Command","Move","Shoot","Charge","Fight"][i]}</button>`).join("")}</div>
     <div class="row"><span class="small muted grow">${who} ${PHASES[g.phase]} phase${g.phase===0 ? " · both players gained 1CP" : ""}</span><button class="btn primary" data-act="gnext">Next phase →</button></div>`}
-    ${l ? `<div><div class="sec-h">Stratagems you can use now · ${list.length}</div>
+    ${setup ? `<div class="stack battle-missions">${setup}</div>` : ""}
+    ${l ? `<details class="fold"${keepOpen("g-strats")}><summary class="sec-h">Stratagems you can use now · ${list.length}</summary>
       <div class="cpnote">You have <b>${num(g.cp[0])} CP</b>.${list.some(s => num(s.cp_cost) > num(g.cp[0])) ? " Faded ones cost more than you have." : ""}</div>
       ${list.length ? list.map(s => stratRow(s, num(g.cp[0]))).join("") : `<div class="small muted">Nothing usable in this phase.</div>`}
       ${!l.det ? `<div class="small muted">Pick a detachment for this list to see its stratagems too.</div>` : ""}
-      ${challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</div>
-      ${(() => { const ab = abilitiesNow(l, PHASES[g.phase]); return `<div><div class="sec-h">Abilities that matter now · ${ab.length}</div>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">None of your army's abilities mention this phase.</div>`}</div>`; })()}` : `<div class="small muted">Choose your list to see which stratagems and abilities you can use each phase.</div>`}
+      ${challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</details>
+      ${(() => { const ab = abilitiesNow(l, PHASES[g.phase]); return `<details class="fold"${keepOpen("g-abil")}><summary class="sec-h">Abilities that matter now · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">None of your army's abilities mention this phase.</div>`}</details>`; })()}` : `<div class="small muted">Choose your list to see which stratagems and abilities you can use each phase.</div>`}
     ${S.marks.length ? `<details class="dsub"><summary>★ Your bookmarks · ${S.marks.length}</summary>${marksHtml()}</details>` : ""}
   </div>`;
 }
@@ -2103,13 +2112,12 @@ function viewGame(){
   return `<div class="stack">
     <div class="card"><div class="sec-h">Battle round</div>
       <div class="stepper"><button data-act="ground" data-d="-1" aria-label="Previous round">−</button><span class="big num">${g.round}</span><button data-act="ground" data-d="1" aria-label="Next round">+</button></div></div>
-    ${battleHtml(g)}
+    ${battleHtml(g, setup)}
     <div class="row">
       ${gOrder(g).map(p => `<div class="card grow ${p === 0 ? "pl-me" : "pl-opp"}" style="text-align:center;flex-basis:140px"><input type="text" data-in="gname" data-p="${p}" value="${esc(g.names[p])}" aria-label="Player name" style="text-align:center;font-weight:600">${g.role ? `<div class="rolelab" style="margin-top:4px">${roleOf2(g, p)}</div>` : ""}
         <div class="sec-h" style="margin-top:8px">Command points</div>
         <div class="stepper"><button data-act="gcp" data-p="${p}" data-d="-1" aria-label="Spend CP">−</button><span class="big num">${g.cp[p]}</span><button data-act="gcp" data-p="${p}" data-d="1" aria-label="Gain CP">+</button></div></div>`).join("")}
     </div>
-    ${setup}
     ${D ? gameDsHtml(g) : ""}
     <div class="card">
       <div class="sec-h">Victory points by round</div>
