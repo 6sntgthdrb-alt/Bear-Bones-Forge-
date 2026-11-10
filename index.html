@@ -798,10 +798,10 @@ nav.tabs button.scrubhover{opacity:1 !important;color:var(--text);transform:tran
 nav.tabs button.scrubhover svg{stroke:var(--accent)}
 nav.tabs.scrubbing .tabind::before{width:70%;height:4px}
 #tabs{touch-action:pan-x;-webkit-touch-callout:none}
-.rtabs button{transition:transform .14s ease}
+.rtabs button{transition:background-color .16s ease,color .16s ease,box-shadow .16s ease,opacity .16s ease}
 .rtabs.scrubbing{touch-action:none;-webkit-user-select:none;user-select:none}
-.rtabs.scrubbing button{opacity:.6}
-.rtabs button.scrubhover{opacity:1 !important;transform:scale(1.08)}
+.rtabs.scrubbing button{opacity:.75}
+.rtabs.scrubbing button[aria-pressed="true"]{opacity:1}
 .dspage{display:flex;flex-direction:column;gap:12px}
 .dsp-h{display:flex;align-items:center;gap:12px;padding:4px 0 10px;border-bottom:1px solid var(--line)}
 .dsp-back{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--panel);font-size:1.6rem;line-height:1;color:var(--accent);display:grid;place-items:center;flex:none}
@@ -1917,6 +1917,7 @@ const TAB_ORDER = ["lists", "build", "rules", "game", "data"];
 const RULE_TABS = ["core", "brief", "army", "det", "strat", "units", "marks"];
 /* Keep the Rules tab bar scrolled so the open tab is in view. */
 function showRTab(smooth, restore){ const bar = document.querySelector(".rtabs"); if (!bar) return; if (restore && S.rtabScroll != null) bar.scrollLeft = S.rtabScroll;
+  if (S.rScrub) { bar.classList.add("scrubbing"); return; } // hold the bar still while a finger is dragging along it
   const b = bar.querySelector('[aria-pressed="true"]'); if (!b) return; const br = bar.getBoundingClientRect(), r = b.getBoundingClientRect();
   if (r.left < br.left + 8 || r.right > br.right - 8) { const left = bar.scrollLeft + (r.left - br.left) - (br.width - r.width) / 2; S.rtabScroll = Math.max(0, left); bar.scrollTo({ left, behavior: smooth ? "smooth" : "auto" }); } }
 function goRules(k){ S.rulesTab = k; render(); window.scrollTo(0, 0); showRTab(true); }
@@ -3682,28 +3683,32 @@ document.addEventListener("scroll", e => { if (e.target && e.target.classList &&
   let sc = null;
   const bar = () => document.querySelector(".rtabs");
   const under = x => { const b = bar(); if (!b) return null; const r = b.getBoundingClientRect(); const el = document.elementFromPoint(Math.max(r.left + 2, Math.min(r.right - 2, x)), r.top + r.height / 2); return el && el.closest('[data-act="rtab"]'); };
-  const hover = k => document.querySelectorAll(".rtabs button").forEach(b => b.classList.toggle("scrubhover", b.dataset.v === k));
-  const nudge = () => { if (!sc || !sc.on) return; const b = bar(); if (b) { const r = b.getBoundingClientRect(), z = 40;
-      const v = sc.x < r.left + z ? -(r.left + z - sc.x) / 3 : sc.x > r.right - z ? (sc.x - (r.right - z)) / 3 : 0;
-      if (v) { b.scrollLeft += v; S.rtabScroll = b.scrollLeft; pick(); } }
+  // while dragging, only the highlight moves; the page itself changes once the finger rests or lets go
+  const hover = k => document.querySelectorAll(".rtabs button").forEach(b => b.setAttribute("aria-pressed", k ? String(b.dataset.v === k) : String(b.dataset.v === S.rulesTab)));
+  const slideIn = dir => { const b = bar(); if (!b) return; let el = b.nextElementSibling;
+    for (; el; el = el.nextElementSibling) if (el.animate) try { el.animate([{ transform:`translateX(${dir * 18}px)`, opacity:.25 }, { transform:"none", opacity:1 }], { duration:200, easing:"cubic-bezier(.2,.7,.2,1)" }); } catch {} };
+  const commit = k => { if (!k || k === S.rulesTab) return; const from = RULE_TABS.indexOf(S.rulesTab), to = RULE_TABS.indexOf(k);
+    const b = bar(); if (b) S.rtabScroll = b.scrollLeft; S.rulesTab = k; render(); window.scrollTo(0, 0); slideIn(to > from ? 1 : -1);
+    if (navigator.vibrate) try { navigator.vibrate(8); } catch {} };
+  const nudge = () => { if (!sc || !sc.on) return; const b = bar(); if (b) { const r = b.getBoundingClientRect(), z = 44;
+      const d = sc.x < r.left + z ? -(r.left + z - sc.x) : sc.x > r.right - z ? sc.x - (r.right - z) : 0;
+      if (d) { const v = Math.sign(d) * Math.min(9, Math.abs(d) / 5 + 1); b.scrollLeft += v; S.rtabScroll = b.scrollLeft; pick(); } }
     sc.raf = requestAnimationFrame(nudge); };
-  const pick = () => { const btn = under(sc.x); if (!btn) return; const k = btn.dataset.v; hover(k);
-    if (k !== S.rulesTab) { const from = RULE_TABS.indexOf(S.rulesTab), to = RULE_TABS.indexOf(k), m = $("#main");
-      S.rulesTab = k; S.rtabScroll = bar() ? bar().scrollLeft : S.rtabScroll; render(); window.scrollTo(0, 0); hover(k);
-      m.style.transition = "none"; m.style.transform = `translateX(${(to > from ? 1 : -1) * 12}%)`; m.style.opacity = ".5";
-      requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .16s ease-out, opacity .16s"; m.style.transform = ""; m.style.opacity = ""; }));
-      if (navigator.vibrate) try { navigator.vibrate(8); } catch {} } };
+  const pick = () => { const btn = under(sc.x); if (!btn) return; const k = btn.dataset.v; if (k === sc.k) return;
+    sc.k = k; hover(k); clearTimeout(sc.rest); sc.rest = setTimeout(() => { if (sc && sc.on && sc.k === k) { commit(k); hover(k); } }, 220);
+    if (navigator.vibrate) try { navigator.vibrate(4); } catch {} };
   document.addEventListener("touchstart", e => {
     const b = e.target.closest && e.target.closest(".rtabs"); if (!b || e.touches.length !== 1) return;
     const t = e.touches[0], node = e.target; sc = { x:t.clientX, y:t.clientY, on:false, node };
-    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; b.classList.add("scrubbing"); pick(); nudge(); } }, 260);
+    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; S.rScrub = true; b.classList.add("scrubbing"); pick(); nudge(); } }, 260);
     // listen on the touched element itself: the bar is rebuilt as tabs change, and events stay with the original element
     const move = ev => { if (!sc) return; const p = ev.touches[0]; sc.x = p.clientX;
       if (!sc.on) { if (Math.abs(p.clientX - sc.sx0) > 6 && Date.now() - sc.t0 > 0) { /* plain horizontal scroll of the bar: leave it alone */ } return; }
       ev.preventDefault(); pick(); };
     const end = () => { node.removeEventListener("touchmove", move); node.removeEventListener("touchend", end); node.removeEventListener("touchcancel", end);
-      if (!sc) return; const s0 = sc; sc = null; clearTimeout(s0.timer); cancelAnimationFrame(s0.raf); if (!s0.on) return;
-      document.querySelectorAll(".rtabs").forEach(x => x.classList.remove("scrubbing")); hover(null); showRTab(true);
+      if (!sc) return; const s0 = sc; sc = null; clearTimeout(s0.timer); clearTimeout(s0.rest); cancelAnimationFrame(s0.raf); if (!s0.on) return;
+      S.rScrub = false; document.querySelectorAll(".rtabs").forEach(x => x.classList.remove("scrubbing"));
+      if (s0.k && s0.k !== S.rulesTab) commit(s0.k); else hover(null); showRTab(true);
       S.scrubbed = true; setTimeout(() => S.scrubbed = false, 350); };
     sc.sx0 = t.clientX; sc.t0 = Date.now();
     node.addEventListener("touchmove", move, { passive:false }); node.addEventListener("touchend", end); node.addEventListener("touchcancel", end);
