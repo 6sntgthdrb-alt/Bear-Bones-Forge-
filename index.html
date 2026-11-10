@@ -727,6 +727,8 @@ details.sectfold{display:block}
 .rng .half{font-size:.75rem;color:var(--muted);margin-left:4px}
 .brow2{padding:6px 0;border-top:1px solid var(--line)}.brow2:first-child{border-top:0}.brow2 .pill{margin:3px 3px 0 0}
 .bonce{padding:6px 0;border-top:1px solid var(--line)}.bonce.used span{opacity:.5;text-decoration:line-through}
+.unit-ds{margin:-2px 0 4px}
+.unit-edit > summary{font-weight:700;padding:10px 0}
 </style>
 </head>
 <body data-army="">
@@ -1820,7 +1822,7 @@ function viewBuild(){
     const q = (S.addQ || "").toLowerCase().trim();
     const sr = open ? searchIds(l.army, q, g) : { ids:[], hints:{} };
     const shown = sr.ids;
-    return `<details class="sect sectfold${g === "Imperial Agents" ? " allysect" : ""}" aria-label="${esc(g)}"${g === "Imperial Agents" && !mine.length ? keepAttr("b-" + g) : keepOpen("b-" + g)}>
+    return `<details class="sect sectfold${g === "Imperial Agents" ? " allysect" : ""}" aria-label="${esc(g)}"${keepAttr("b-" + g)}>
       <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3>${g === "Imperial Agents" ? `<span class="muted small">Allies</span>` : ""}<span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
       ${mine.map(u => unitCard(l, u, v)).join("")}
       ${ids.length ? `<button class="addbtn" data-act="addopen" data-v="${esc(g)}" aria-expanded="${open}">${open ? SVG.down : "+"} Add ${esc(catOne(g, l.army))}<span class="muted small">${ids.length} available</span></button>` : ""}
@@ -1835,9 +1837,9 @@ function viewBuild(){
     <label class="f" for="lname">List name<input type="text" id="lname" value="${esc(l.name)}" data-in="lname"></label>
     <div class="sec-h">Battle size</div>
     <div class="seg" role="group" aria-label="Battle size">${SIZES.map(s => `<button data-act="setsize" data-v="${s.pts}" aria-pressed="${s.pts===l.points}">${s.name}<small class="segsub">${s.pts} pts</small></button>`).join("")}</div>
-    <div class="sec-h">Detachment</div>
+    <details class="sect sectfold detfold"${keepOpen("b-det")}><summary class="sect-h"><h3>Detachment</h3><span class="muted small">${l.det ? esc(l.det.name) : "None chosen"}</span></summary><div class="sect-b">
     ${l.det ? `<div class="detcur">${detBox(l.army, l.det, l, true)}</div>` : `<div class="detempty"><span class="muted">No detachment chosen yet.</span></div>`}
-    <button class="btn${l.det ? "" : " primary"}" data-act="detpicker">${l.det ? "Change detachment" : "Choose a detachment"} <span class="muted small">${dets.length} available</span></button>
+    <button class="btn${l.det ? "" : " primary"}" data-act="detpicker">${l.det ? "Change detachment" : "Choose a detachment"} <span class="muted small">${dets.length} available</span></button></div></details>
     <div class="row"><span class="pill ${v.errors.length?"err":"ok"}">${v.errors.length ? v.errors.length + " problem" + (v.errors.length>1?"s":"") : "Legal list"}</span>
       ${v.warnings.length ? `<span class="pill warn">${v.warnings.length} to check</span>` : ""}
       <span class="pill num">${l.units.filter(u=>u.enh).length}/3 enhancements</span>
@@ -1882,7 +1884,10 @@ function unitCard(l, u, v){
       : `<label class="check"><input type="checkbox" data-ch="uwgt" data-u="${u.uid}" data-line="${esc(o.line)}"${pickVal(o)?" checked":""}><span>${esc(o.text)}</span></label>`) + cnt(o);
     const lead = opts.filter(o => o.leader), squad = opts.filter(o => !o.leader);
     const leadName = lead.length ? ((lead[0].subject.match(LEADER_RE)||["Sergeant"])[0]) : "";
+    const wpSet = unitWeapons(u);
     body = `<div class="unit-b">
+      <div class="unit-ds">${dsBody(u.ds, wpSet ? { weapons: wpSet, compact: true } : { compact: true })}</div>
+      <details class="dsub unit-edit"${keepAttr("unit-edit")}><summary>Edit unit <span class="muted small">size, ${isChar ? "Warlord, enhancement, " : ""}wargear${canLead.length ? ", attach" : ""}</span></summary><div class="stack" style="gap:10px;margin-top:8px">
       ${rows.length > 1 ? `<div class="sizerow"><label class="f grow" for="sz-${u.uid}">Unit size<select id="sz-${u.uid}" data-ch="usize" data-u="${u.uid}">${rows.map(x => `<option value="${esc(x.line)}"${x===r?" selected":""}>${esc(plain(x.label))} · ${x.cost} pts</option>`).join("")}</select></label><button class="btn small${r===rows[0]?" primary":""}" data-act="usizemin" data-u="${u.uid}" aria-label="Smallest size">Min</button><button class="btn small${r===rows[rows.length-1]?" primary":""}" data-act="usizemax" data-u="${u.uid}" aria-label="Largest size">Max</button></div>` : `<div class="small muted">${r ? esc(plain(r.label)) + " · " + r.cost + " pts" : "No points in the data"}</div>`}
       ${addonRows(u.ds).map(a => `<label class="check"><input type="checkbox" data-ch="uaddon" data-u="${u.uid}" data-line="${esc(a.line)}"${u.addons && u.addons[a.line] ? " checked" : ""}><span>Add ${esc(plain(a.label))} <span class="muted">(+${a.cost} pts)</span></span></label>`).join("")}
       ${isChar ? `<label class="check"><input type="checkbox" data-ch="warlord" data-u="${u.uid}"${u.warlord?" checked":""}><span>Warlord</span></label>` : ""}
@@ -1892,7 +1897,8 @@ function unitCard(l, u, v){
       ${squad.length ? `<div class="wgbox"><div class="sec-h">${lead.length ? "Squad wargear" : "Wargear options"}</div>${squad.map(optHtml).join("")}</div>` : ""}
       <div class="ownrow"><label class="small" for="own-${u.uid}">Models of this unit you own</label><input type="number" inputmode="numeric" min="0" id="own-${u.uid}" class="owninp" data-in="own" data-id="${u.ds}" value="${S.collection[u.ds] ?? ""}" placeholder="–"></div>
       <label class="f" for="nt-${u.uid}">Wargear notes<textarea id="nt-${u.uid}" data-in="unotes" data-u="${u.uid}" placeholder="e.g. 1x plasma pistol, power fist on sergeant">${esc(u.notes||"")}</textarea></label>
-      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}" data-u="${u.uid}">Datasheet</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
+      </div></details>
+      <div class="row"><button class="btn small" data-act="ds" data-id="${u.ds}" data-u="${u.uid}">Full screen</button><button class="btn small" data-act="dupunit" data-u="${u.uid}">Duplicate</button><span class="grow"></span><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>
     </div>`;
   } else if (open) {
     body = `<div class="unit-b"><button class="btn small danger" data-act="rmunit" data-u="${u.uid}">Remove</button></div>`;
