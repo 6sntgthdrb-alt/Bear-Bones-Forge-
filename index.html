@@ -788,12 +788,15 @@ ul.tips{margin:6px 0 4px;padding-left:18px}ul.tips li{margin:4px 0;font-size:.9r
 @media (min-width:1300px){ .briefgrid{grid-template-columns:repeat(3,minmax(0,1fr))} }
 body{overflow-x:clip}
 #main{will-change:auto}
+nav.tabs{position:fixed}
+nav.tabs .tabind{position:absolute;top:0;left:0;width:20%;height:3px;pointer-events:none;display:flex;justify-content:center}
+nav.tabs .tabind::before{content:"";width:46%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 60%,transparent)}
 </style>
 </head>
 <body data-army="">
 <header class="top" id="top"></header>
 <main id="main"></main>
-<nav class="tabs" id="tabs" aria-label="Sections">
+<nav class="tabs" id="tabs" aria-label="Sections"><span class="tabind" aria-hidden="true"></span>
   <button data-act="nav" data-v="lists"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Lists</button>
   <button data-act="nav" data-v="build"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/></svg>Build</button>
   <button data-act="nav" data-v="rules"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 013 3v13H8a3 3 0 01-3-3z M5 17a3 3 0 013-3h11"/></svg>Rules</button>
@@ -1793,12 +1796,17 @@ function fitStats(root){
 }
 document.addEventListener("toggle", e => { if (e.target.open) fitStats(e.target); }, true);
 window.addEventListener("resize", () => { clearTimeout(window._fitT); window._fitT = setTimeout(() => fitStats(), 150); });
+const TAB_ORDER = ["lists", "build", "rules", "game", "data"];
+/* The marker in the bottom bar: sits under the current tab and slides with a swipe. */
+function tabInd(pos, anim){ const el = document.querySelector("#tabs .tabind"); if (!el || pos < 0) return;
+  el.style.transition = anim ? "transform .25s cubic-bezier(.2,.8,.2,1)" : "none"; el.style.transform = `translateX(${pos * 100}%)`; }
 function render(){
   const l = curList();
   const gl = S.view === "game" && S.game && S.game.listId && S.lists.find(x => x.id === S.game.listId);
   const ra = S.view === "rules" && !l ? S.rulesArmy : S.view === "game" && gl ? gl.army : (l ? l.army : null);
   applyTheme(ra);
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
+  tabInd(TAB_ORDER.indexOf(S.view), true);
   renderTop();
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
@@ -3436,7 +3444,6 @@ applyMode();
 })();
 
 /* ============ swipe across the page to move between the bottom tabs ============ */
-const TAB_ORDER = ["lists", "build", "rules", "game", "data"];
 function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.confirmGame = false; render(); window.scrollTo(0, 0); }
 (function(){
   let st = null;
@@ -3458,20 +3465,22 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     if (st.edge && Math.sign(dx) !== st.edge && Math.abs(dx) > 8) { st = null; return; }
     if (!st.on) { if (Math.abs(dx) > (st.edge ? 10 : 16) && Math.abs(dx) > Math.abs(dy) * (st.edge ? 1.2 : 1.7)) st.on = true; else if (Math.abs(dy) > (st.edge ? 20 : 12)) { st = null; return; } else return; }
     st.dx = dx; const i = TAB_ORDER.indexOf(S.view), edge = (dx > 0 && i <= 0) || (dx < 0 && i >= TAB_ORDER.length - 1);
+    tabInd(i + Math.max(edge ? -0.08 : -1, Math.min(edge ? 0.08 : 1, -dx / Math.max(160, innerWidth * 0.5))), false);
     const m = main(); m.style.transition = "none"; m.style.transform = `translateX(${dx * (edge ? 0.12 : 0.5)}px)`; m.style.opacity = String(1 - Math.min(0.35, Math.abs(dx) / innerWidth * (edge ? 0.2 : 0.6)));
   }, { passive:true });
   const end = () => {
     if (!st) return; const s0 = st; st = null; if (!s0.on) return;
     const m = main(), i = TAB_ORDER.indexOf(S.view), next = s0.dx < 0 ? i + 1 : i - 1, fast = Math.abs(s0.dx) / Math.max(1, Date.now() - s0.t) > 0.5;
     const go = next >= 0 && next < TAB_ORDER.length && (s0.edge ? Math.abs(s0.dx) > 36 : (Math.abs(s0.dx) > Math.min(110, innerWidth * 0.22) || (Math.abs(s0.dx) > 50 && fast)));
-    if (!go) { m.style.transition = "transform .2s ease, opacity .2s"; m.style.transform = ""; m.style.opacity = ""; return; }
+    if (!go) { m.style.transition = "transform .2s ease, opacity .2s"; m.style.transform = ""; m.style.opacity = ""; tabInd(i, true); return; }
+    tabInd(next, true);
     const dir = s0.dx < 0 ? -1 : 1;
     const q = s0.edge ? 0.6 : 1;
     m.style.transition = `transform ${.15 * q}s ease-in, opacity ${.15 * q}s`; m.style.transform = `translateX(${dir * 45}%)`; m.style.opacity = "0";
     setTimeout(() => { goView(TAB_ORDER[next]); m.style.transition = "none"; m.style.transform = `translateX(${-dir * 35}%)`; m.style.opacity = "0";
       requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = `transform ${.22 * q}s cubic-bezier(.2,.8,.2,1), opacity ${.22 * q}s`; m.style.transform = ""; m.style.opacity = ""; })); }, 150 * q);
   };
-  document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st && st.on) { const m = main(); m.style.transition = "transform .2s"; m.style.transform = ""; m.style.opacity = ""; } st = null; });
+  document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st && st.on) { const m = main(); m.style.transition = "transform .2s"; m.style.transform = ""; m.style.opacity = ""; tabInd(TAB_ORDER.indexOf(S.view), true); } st = null; });
 })();
 
 /* ============ boot ============ */
