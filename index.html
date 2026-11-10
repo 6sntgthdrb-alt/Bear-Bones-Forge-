@@ -1917,7 +1917,7 @@ function viewRules(){
   const l = curList();
   const army = l ? l.army : S.rulesArmy;
   const det = l ? l.det : null;
-  const tabs = [["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["core","Core rules"],["marks","★ Saved"]];
+  const tabs = [["core","Core rules"],["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
   const mine = l && S.rulesMine !== false;
   let body = "";
   if (S.rulesTab === "core") {
@@ -2272,11 +2272,11 @@ function oppHtml(g){
 const useChal = () => LS.get("useChal", false);
 function terrainHtml(g){
   if (!M || !M.layouts) return "";
-  const pm = M.tournamentPool.find(t => t.primary === g.pri && t.deployment === g.dep && g.size === "Strike Force");
+  const pm = g.size === "Strike Force" && M.tournamentPool.find(t => t.deployment === g.dep);
   const rec = pm ? M.layouts.filter(x => new RegExp("\\b" + x.name + "\\b").test(pm.layouts)) : [];
   const th = x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`;
-  return `<details class="card foldcard"${keepOpen("g-terrain")}><summary><h3>🏚️ Terrain</h3><span class="muted small">${rec.length ? rec.length + " recommended layouts" : "Chapter Approved layouts"}</span></summary><div style="margin-top:10px">
-    ${rec.length ? `<div class="lgrid">${rec.map(th).join("")}</div>` : `<div class="small muted">Pick a Chapter Approved tournament mission below to see its recommended layouts.</div>`}
+  return `<details class="card foldcard"${keepOpen("g-terrain")}><summary><h3>🏚️ Terrain</h3><span class="muted small">${rec.length ? rec.length + " recommended for " + esc(g.dep) : "Chapter Approved layouts"}</span></summary><div style="margin-top:10px">
+    ${rec.length ? `<div class="lgrid">${rec.map(th).join("")}</div>` : `<div class="small muted">${g.size === "Strike Force" ? "Choose a deployment above to see which layouts suit it." : "Recommended layouts are for Strike Force games. Any layout below works."}</div>`}
     <details class="dsub" style="margin-top:8px"><summary>All layouts · ${M.layouts.length}</summary><div class="lgrid" style="margin-top:8px">${M.layouts.map(th).join("")}</div></details></div></details>`;
 }
 function keepOpen(k){ return ` data-keep="${k}"${S.keep[k] === false ? "" : " open"}`; }
@@ -2437,7 +2437,8 @@ function viewGame(){
   if (!g.role && !g.tableSet) return `<div class="stack gamev">
     <div class="card stack"><div class="gds-h">3 · Prepare the battlefield</div>
       <div class="small muted">Choose the mission and lay out the terrain. When the table is ready, you'll decide who attacks and who defends.</div>
-      <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${S.lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label></div>
+      <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${S.lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>
+      <label class="f" for="gopp">Opponent's army<div class="row" style="gap:8px;flex-wrap:nowrap"><select id="gopp" class="grow" data-ch="opppick"><option value="">${g.opp ? esc(g.opp.name) + " (" + esc(armyName(g.opp.army, g.opp)) + ")" : "No list, playing without it"}</option>${S.lists.filter(x => x.id !== g.listId).map(x => `<option value="${x.id}">${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select><button class="btn small" data-act="oppimport" style="flex:none">Import</button></div></label></div>
     ${setup}
     ${terrainHtml(g)}
     <button class="btn primary tableset" data-act="gtable" data-v="1"><b>⚔️ The battlefield is set</b><span class="small">Next: Attacker and Defender</span></button>
