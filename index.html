@@ -791,6 +791,13 @@ body{overflow-x:clip}
 nav.tabs{position:fixed}
 nav.tabs .tabind{position:absolute;top:0;left:0;width:20%;height:3px;pointer-events:none;display:flex;justify-content:center}
 nav.tabs .tabind::before{content:"";width:46%;height:3px;border-radius:0 0 3px 3px;background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 60%,transparent)}
+nav.tabs button{transition:transform .14s ease,color .14s}
+nav.tabs.scrubbing{touch-action:none;-webkit-user-select:none;user-select:none}
+nav.tabs.scrubbing button{opacity:.55}
+nav.tabs button.scrubhover{opacity:1 !important;color:var(--text);transform:translateY(-7px) scale(1.12)}
+nav.tabs button.scrubhover svg{stroke:var(--accent)}
+nav.tabs.scrubbing .tabind::before{width:70%;height:4px}
+#tabs{touch-action:pan-x;-webkit-touch-callout:none}
 </style>
 </head>
 <body data-army="">
@@ -2991,7 +2998,7 @@ document.addEventListener("click", e => {
   if (t.tagName === "A") e.preventDefault();
   const U = () => l && l.units.find(u => u.uid === t.dataset.u);
   switch (act) {
-    case "nav": goView(t.dataset.v); break;
+    case "nav": if (S.scrubbed) break; goView(t.dataset.v); break;
     case "newlist": newList(S.newArmy || "SM:BLOOD ANGELS"); S.view = "build"; LS.set("view","build"); render(); break;
     case "ldelask": S.askDel = t.dataset.id; render(); break;
     case "ldelno": S.askDel = null; render(); break;
@@ -3456,6 +3463,7 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
     st = null; if (S.settings.swipeTabs === false || e.touches.length !== 1 || $("#sheets").children.length) return;
     const t = e.touches[0], edge = t.clientX < 28 ? 1 : t.clientX > innerWidth - 28 ? -1 : 0;
     // From the very edge: a quick switch that works anywhere (even over cards and text boxes), in the direction away from that edge
+    if (e.target.closest("#tabs")) return;
     if (edge) { st = { x:t.clientX, y:t.clientY, t:Date.now(), dx:0, on:false, edge }; return; }
     if (!e.target.closest("#main") || blocked(e.target)) return;
     st = { x:t.clientX, y:t.clientY, t:Date.now(), dx:0, on:false };
@@ -3481,6 +3489,35 @@ function goView(v){ S.view = v; LS.set("view", S.view); S.confirmDel = null; S.c
       requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = `transform ${.22 * q}s cubic-bezier(.2,.8,.2,1), opacity ${.22 * q}s`; m.style.transform = ""; m.style.opacity = ""; })); }, 150 * q);
   };
   document.addEventListener("touchend", end); document.addEventListener("touchcancel", () => { if (st && st.on) { const m = main(); m.style.transition = "transform .2s"; m.style.transform = ""; m.style.opacity = ""; tabInd(TAB_ORDER.indexOf(S.view), true); } st = null; });
+})();
+
+/* ============ scrub the bottom bar: hold and slide along it, the page follows your thumb ============ */
+(function(){
+  let sc = null;
+  const nav = () => $("#tabs"), btns = () => [...document.querySelectorAll("#tabs button")];
+  const slot = x => { const r = nav().getBoundingClientRect(); return Math.max(0, Math.min(TAB_ORDER.length - 1, Math.floor((x - r.left) / (r.width / TAB_ORDER.length)))); };
+  const mark = x => { const r = nav().getBoundingClientRect(), w = r.width / TAB_ORDER.length; tabInd(Math.max(0, Math.min(TAB_ORDER.length - 1, (x - r.left) / w - 0.5)), false); };
+  const hover = i => btns().forEach((b, j) => b.classList.toggle("scrubhover", j === i));
+  const show = (i, from) => { if (TAB_ORDER[i] === S.view) return; const m = $("#main"), dir = i > from ? 1 : -1;
+    goView(TAB_ORDER[i]); m.style.transition = "none"; m.style.transform = `translateX(${dir * 18}%)`; m.style.opacity = ".4";
+    requestAnimationFrame(() => requestAnimationFrame(() => { m.style.transition = "transform .16s ease-out, opacity .16s"; m.style.transform = ""; m.style.opacity = ""; }));
+    if (navigator.vibrate) try { navigator.vibrate(8); } catch {} };
+  document.addEventListener("touchstart", e => {
+    if (e.touches.length !== 1 || !e.target.closest("#tabs")) return;
+    const t = e.touches[0]; sc = { x:t.clientX, y:t.clientY, i:slot(t.clientX), on:false, timer:null };
+    // holding still for a moment also starts scrubbing
+    sc.timer = setTimeout(() => { if (sc && !sc.on) { sc.on = true; nav().classList.add("scrubbing"); hover(sc.i); mark(sc.x); } }, 260);
+  }, { passive:true });
+  document.addEventListener("touchmove", e => {
+    if (!sc) return; const t = e.touches[0];
+    if (!sc.on) { if (Math.abs(t.clientX - sc.x) > 8) { sc.on = true; clearTimeout(sc.timer); nav().classList.add("scrubbing"); } else return; }
+    e.preventDefault(); mark(t.clientX);
+    const i = slot(t.clientX); hover(i); if (i !== sc.i) { const from = sc.i; sc.i = i; show(i, from); }
+  }, { passive:false });
+  const end = () => { if (!sc) return; const s0 = sc; sc = null; clearTimeout(s0.timer); if (!s0.on) return;
+    nav().classList.remove("scrubbing"); hover(-1); tabInd(TAB_ORDER.indexOf(S.view), true);
+    S.scrubbed = true; setTimeout(() => S.scrubbed = false, 350); };
+  document.addEventListener("touchend", end); document.addEventListener("touchcancel", end);
 })();
 
 /* ============ boot ============ */
