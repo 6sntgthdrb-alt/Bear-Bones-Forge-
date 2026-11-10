@@ -521,6 +521,49 @@ button.wtag{cursor:pointer}
 .qrbox{background:#fff;padding:14px;border-radius:12px;align-self:center;line-height:0}
 .qrbox svg{width:min(78vw,300px);height:auto;display:block}
 .sharedhead{display:flex;flex-direction:column;gap:4px}
+
+/* Player colours in the Game tab: you = blue, opponent = red */
+:root{--pl-me:#3f7fd9;--pl-opp:#d6453b}
+.card.pl-me,.card.pl-opp{border-left:5px solid var(--pl);background:color-mix(in srgb,var(--pl) 9%,var(--panel)) !important;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--pl) 35%,transparent)}
+.pl-me{--pl:var(--pl-me)}.pl-opp{--pl:var(--pl-opp)}
+.card.pl-me > .row h3,.card.pl-opp > .row h3,.card.pl-me .sec-h,.card.pl-opp .sec-h{color:color-mix(in srgb,var(--pl) 80%,var(--text)) !important}
+.card.pl-me .sec-h,.card.pl-opp .sec-h{border-bottom-color:color-mix(in srgb,var(--pl) 45%,transparent)}
+.card.pl-me .seg button[aria-pressed="true"],.card.pl-opp .seg button[aria-pressed="true"],.card.pl-me .btn.primary,.card.pl-opp .btn.primary{background:var(--pl);border-color:var(--pl);color:#fff}
+.card.pl-me .mcard .kind,.card.pl-opp .mcard .kind{color:var(--pl)}
+.card.pl-me input[data-in="gname"],.card.pl-opp input[data-in="gname"]{border-color:var(--pl);color:color-mix(in srgb,var(--pl) 80%,var(--text))}
+.pl-me-t{color:var(--pl-me) !important}.pl-opp-t{color:var(--pl-opp) !important}
+input.pl-me-in{border-color:color-mix(in srgb,var(--pl-me) 55%,var(--line));background:color-mix(in srgb,var(--pl-me) 8%,var(--panel2))}
+input.pl-opp-in{border-color:color-mix(in srgb,var(--pl-opp) 55%,var(--line));background:color-mix(in srgb,var(--pl-opp) 8%,var(--panel2))}
+.seg button.pl-me-b[aria-pressed="true"]{background:var(--pl-me);color:#fff}
+.seg button.pl-opp-b[aria-pressed="true"]{background:var(--pl-opp);color:#fff}
+
+.gds > summary{cursor:pointer;display:flex;flex-direction:column;gap:2px;list-style:none;padding-right:26px;position:relative}
+.gds > summary::-webkit-details-marker{display:none}
+.gds > summary::after{content:"▾";position:absolute;right:2px;top:2px;font-size:1.1rem;color:var(--pl);transition:transform .2s}
+.gds[open] > summary::after{transform:rotate(180deg)}
+.gds-h{font:700 1.05rem var(--display);color:color-mix(in srgb,var(--pl) 80%,var(--text))}
+
+/* stat numbers scale with the space available, so nested panels never cut them off */
+.sg6{container-type:inline-size}
+.sbox .sv{font-size:clamp(.85rem,7.2cqi,1.45rem) !important}
+.sg6.sm .sbox .sv{font-size:clamp(.8rem,5.6cqi,1.05rem) !important}
+.sbox.long .sv,.sg6.sm .sbox.long .sv{font-size:clamp(.6rem,3.7cqi,.85rem) !important;letter-spacing:-.02em;text-overflow:clip}
+.sbox{padding-left:1px;padding-right:1px}
+
+.rolepick{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px dashed var(--trim);border-radius:var(--r)}
+.rolebtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px}
+.rolebtn .small{font-weight:400;opacity:.8}
+.rolelab{display:block;font:700 .66rem var(--body);letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.pl-me-pill{border-color:var(--pl-me);color:var(--pl-me)}.pl-opp-pill{border-color:var(--pl-opp);color:var(--pl-opp)}
+
+.trkbox{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:8px 10px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--pl,var(--accent)) 10%,var(--panel2));border:1px solid color-mix(in srgb,var(--pl,var(--accent)) 40%,var(--line))}
+.trkbox.dead{opacity:.75;border-style:dashed}
+.trk{display:flex;align-items:center;gap:6px}
+.trk-l{font:700 .68rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);max-width:92px;line-height:1.15}
+.trk-b{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:1.2rem;line-height:1;cursor:pointer;color:var(--text)}
+.trk-v{font:700 1.2rem var(--body);min-width:38px;text-align:center}
+.trk-v small{font-size:.75rem;color:var(--muted);font-weight:500}
+.mcard summary .pill{margin-left:auto}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -777,7 +820,10 @@ function eligible(id, army){
   }
   return true;
 }
-const costRows = id => (D.cost[id]||[]).map(r => ({ line:r.line, label:r.description, cost:num(r.cost) }));
+const costRows = id => (D.cost[id]||[]).filter(r => !/^\s*\+/.test(r.cost)).map(r => ({ line:r.line, label:r.description, cost:num(r.cost) }));
+/* Optional extra models priced as "+N" (e.g. Bike Squad + Attack Bike) are add-ons, not unit sizes. */
+const addonRows = id => (D.cost[id]||[]).filter(r => /^\s*\+/.test(r.cost)).map(r => ({ line:r.line, label:r.description, cost:num(r.cost) }));
+const addonsOf = u => addonRows(u.ds).filter(a => u.addons && u.addons[a.line]);
 function maxOf(id){
   const k = D.kwSet[id] || new Set();
   if (k.has("EPIC HERO")) return 1;
@@ -886,6 +932,7 @@ const S = {
   game: LS.get("game", null),
   settings: LS.get("settings", { legends:false }),
   marks: LS.get("marks", []),
+  keep: {},
   syncNote: "Saved on this device",
   dataNote: ""
 };
@@ -982,6 +1029,8 @@ function parseListText(text){
     const byPts = rows.find(r => r.cost === h.pts - (e ? num(e.cost) : 0)) || rows.find(r => r.cost === h.pts);
     const bySize = sizeM && rows.find(r => parseInt(plain(r.label)) === +sizeM[1]);
     u.line = (byPts || bySize || rows[0] || {}).line || null;
+    addonRows(h.id).forEach(ad => { if (all.includes(lc(plain(ad.label)))) (u.addons ||= {})[ad.line] = 1; });
+    if (u.addons && !byPts) { const base = h.pts - (e ? num(e.cost) : 0) - addonsOf(u).reduce((x, ad) => x + ad.cost, 0); const m2 = rows.find(r => r.cost === base); if (m2) u.line = m2.line; }
     const stems = new Set((D.wg[h.id]||[]).map(w => wStem(w.name)).filter(Boolean));
     const blockStems = stemsIn(block.join(" ; "), stems);
     optsOf(h.id).forEach(o => { if (!o.choices.length) return;
@@ -1015,13 +1064,28 @@ function openImport(target){
 
 /* ============ game history ============ */
 let histTimer;
+function gameReport(h){
+  const d = h.detail, res = h.result === "w" ? "Win" : h.result === "l" ? "Loss" : "Draw";
+  const L = [`Bear Bones Forge game report · ${new Date(h.date).toLocaleDateString("en-NZ")}`, `${res} ${h.score[0]}–${h.score[1]}`, `My army: ${h.listName}${h.army ? " (" + armyName(h.army) + ")" : ""}`, `Opponent: ${h.opp}`];
+  if (d && d.role) L.push(`${d.names[0]} was the ${d.role === "att" ? "Attacker" : "Defender"}`);
+  if (h.mission) L.push(`Mission: ${h.mission}${d && d.twist ? " · Twist: " + d.twist : ""}${d && d.size ? " · " + d.size : ""}`);
+  if (d) {
+    L.push("", `Score by round (primary / secondary), ${d.names[0]} vs ${d.names[1]}:`);
+    for (let r = 0; r < 5; r++) L.push(`Round ${r+1}: ${num(d.vp[0][r])} / ${num(d.sec[0][r])}  vs  ${num(d.vp[1][r])} / ${num(d.sec[1][r])}`);
+    d.secs.forEach((x, p) => L.push("", `${d.names[p]} secondaries (${x.mode})${x.fixed.length && x.mode === "fixed" ? ": " + x.fixed.join(", ") : ""}`, `  Achieved: ${x.achieved.join(", ") || "none"}`, `  Discarded: ${x.discarded.join(", ") || "none"}`, x.active.length ? `  Still active at the end: ${x.active.join(", ")}` : ""));
+    if (d.notes) L.push("", "Notes: " + d.notes);
+    if (d.myList) L.push("", "--- My list ---", d.myList);
+    if (d.oppList) L.push("", "--- Opponent's list ---", d.oppList);
+  } else L.push("", "(Saved before detailed reports were added, so only the result is recorded.)");
+  return L.filter(x => x !== "").join("\n").replace(/\n(?=Score by|.* secondaries \(|Notes:|--- )/g, "\n\n");
+}
 function saveHistory(){ LS.set("history", S.history); clearTimeout(histTimer); if (Cloud.ready) histTimer = setTimeout(() => Cloud.put("history", { h: JSON.parse(JSON.stringify(S.history.slice(0, 200))) }).catch(()=>{}), 800); }
 function recordOf(listId){ const r = { w:0, l:0, d:0 }; S.history.filter(h => h.listId === listId).forEach(h => r[h.result]++); return r; }
 const recordText = r => (r.w + r.l + r.d) ? `${r.w}W ${r.l}L${r.d ? " " + r.d + "D" : ""}` : "";
 
 /* ============ collection ============ */
 function modelsOfLabel(label){ const t = plain(label); const m = t.match(/(\d+)\s*models?/i); if (m) return +m[1]; const ns = (t.match(/\d+/g)||[]).map(Number); return ns.length ? ns.reduce((a,b) => a+b, 0) : 1; }
-function unitModels(u){ const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; return r ? modelsOfLabel(r.label) : 1; }
+function unitModels(u){ const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; return (r ? modelsOfLabel(r.label) : 1) + addonsOf(u).length; }
 let collTimer;
 function saveCollection(){ LS.set("collection", S.collection); clearTimeout(collTimer); if (Cloud.ready) collTimer = setTimeout(() => Cloud.put("collection", { c: JSON.parse(JSON.stringify(S.collection)) }).catch(()=>{}), 1000); }
 function shortfalls(l){
@@ -1049,7 +1113,7 @@ function exportText(l, fmt){
   if (fmt === "bb") return listText(l);
   const v = validate(l), sz = SIZES.find(x => x.pts === l.points), fac = D.factions.find(f => f.id === fidOf(l.army));
   const r_ = u => { const rows = costRows(u.ds); return rows.find(x => x.line === u.line) || rows[0]; };
-  const picks = u => wgPicks(u).map(p => p.short.replace(/^1\s+/, ""));
+  const picks = u => [...addonsOf(u).map(a => plain(a.label)), ...wgPicks(u).map(p => p.short.replace(/^1\s+/, ""))];
   const grp = u => { const g = roleOf(u.ds); return g === "Epic Heroes" || g === "Characters" ? "CHARACTERS" : g === "Battleline" ? "BATTLELINE" : g === "Dedicated Transports" ? "DEDICATED TRANSPORTS" : "OTHER DATASHEETS"; };
   const order = ["CHARACTERS","BATTLELINE","DEDICATED TRANSPORTS","OTHER DATASHEETS"];
   const units = l.units.filter(u => D.ds[u.ds]);
@@ -1122,7 +1186,7 @@ function newList(army){
 }
 function unitCost(u){
   const rows = costRows(u.ds); if (!rows.length) return 0;
-  return (rows.find(r => r.line === u.line) || rows[0]).cost;
+  return (rows.find(r => r.line === u.line) || rows[0]).cost + addonsOf(u).reduce((a, x) => a + x.cost, 0);
 }
 const enhCost = u => u.enh && D.enhById[u.enh] ? num(D.enhById[u.enh].cost) : 0;
 function unitLabel(l, u){
@@ -1198,6 +1262,7 @@ function listText(l){
       out.push(`• ${unitLabel(l,u)}${r ? " (" + plain(r.label) + ")" : ""} — ${unitCost(u)+enhCost(u)} pts`);
       const extra = [];
       if (u.warlord) extra.push("Warlord");
+      addonsOf(u).forEach(a => extra.push(`+ ${plain(a.label)} (+${a.cost})`));
       if (u.enh && D.enhById[u.enh]) extra.push(`Enhancement: ${D.enhById[u.enh].name} (+${enhCost(u)})`);
       if (u.lead) { const t = l.units.find(x => x.uid === u.lead); if (t) extra.push(`Leading: ${unitLabel(l,t)}`); }
       if (extra.length) out.push("   " + extra.join(" · "));
@@ -1544,6 +1609,7 @@ function unitCard(l, u, v){
     const leadName = lead.length ? ((lead[0].subject.match(LEADER_RE)||["Sergeant"])[0]) : "";
     body = `<div class="unit-b">
       ${rows.length > 1 ? `<div class="sizerow"><label class="f grow" for="sz-${u.uid}">Unit size<select id="sz-${u.uid}" data-ch="usize" data-u="${u.uid}">${rows.map(x => `<option value="${esc(x.line)}"${x===r?" selected":""}>${esc(plain(x.label))} · ${x.cost} pts</option>`).join("")}</select></label><button class="btn small${r===rows[0]?" primary":""}" data-act="usizemin" data-u="${u.uid}" aria-label="Smallest size">Min</button><button class="btn small${r===rows[rows.length-1]?" primary":""}" data-act="usizemax" data-u="${u.uid}" aria-label="Largest size">Max</button></div>` : `<div class="small muted">${r ? esc(plain(r.label)) + " · " + r.cost + " pts" : "No points in the data"}</div>`}
+      ${addonRows(u.ds).map(a => `<label class="check"><input type="checkbox" data-ch="uaddon" data-u="${u.uid}" data-line="${esc(a.line)}"${u.addons && u.addons[a.line] ? " checked" : ""}><span>Add ${esc(plain(a.label))} <span class="muted">(+${a.cost} pts)</span></span></label>`).join("")}
       ${isChar ? `<label class="check"><input type="checkbox" data-ch="warlord" data-u="${u.uid}"${u.warlord?" checked":""}><span>Warlord</span></label>` : ""}
       ${isChar && !isEpic ? `<label class="f" for="en-${u.uid}">Enhancement<select id="en-${u.uid}" data-ch="uenh" data-u="${u.uid}"><option value="">None</option>${enhs.map(e => `<option value="${esc(e.id)}"${u.enh===e.id?" selected":""}>${esc(e.name)} (+${num(e.cost)} pts)</option>`).join("")}</select></label>${!l.det ? `<div class="small muted">Choose a detachment to see its enhancements.</div>` : ""}` : ""}
       ${canLead.length ? `<label class="f" for="ld-${u.uid}">Attached to<select id="ld-${u.uid}" data-ch="ulead" data-u="${u.uid}"><option value="">Not attached</option>${targets.map(t => `<option value="${t.uid}"${u.lead===t.uid?" selected":""}>${esc(unitLabel(l,t))}</option>`).join("")}</select></label>${!targets.length ? `<div class="small muted">Can lead: ${canLead.map(id => esc(D.ds[id]?.name||"")).filter(Boolean).join(", ")}. Add one of those to attach.</div>`:""}` : ""}
@@ -1583,6 +1649,35 @@ function detBox(army, d, l, compact){
     <details class="dsub"${sel && !compact ? " open" : ""}><summary>Stratagems · ${st.length}</summary>${st.map(stratRow).join("") || `<div class="small muted">None.</div>`}</details>
   </section>`;
 }
+function keepAttr(k){ return k ? ` data-keep="${esc(k)}"${S.keep[k] ? " open" : ""}` : ""; }
+function listDsHtml(l, keyPfx = ""){
+  return ROLE_ORDER.map(g => {
+        const us = l.units.filter(u => (D.ds[u.ds] ? roleOf(u.ds) : "Other units") === g); if (!us.length) return "";
+        const cards = us.map(u => {
+          if (!D.ds[u.ds]) return "";
+          const tgt = u.lead && l.units.find(x => x.uid === u.lead);
+          if (tgt && D.ds[tgt.ds]) return "";
+          const leaders = l.units.filter(x => x.lead === u.uid && D.ds[x.ds]);
+          const part = (x, role) => {
+            const wp = unitWeapons(x), e = x.enh && D.enhById[x.enh];
+            const rows = costRows(x.ds), r = rows.find(y => y.line === x.line) || rows[0];
+            return `${role ? `<div class="attach-h"><span class="pill acc">${role}</span> <b>${esc(unitLabel(l,x))}</b> <span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(x)+enhCost(x)} pts${x.warlord ? " · Warlord" : ""}</span></div>` : ""}${keyPfx ? trackHtml("me", x) : ""}
+              ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
+              ${wgPicks(x).length ? `<div class="small"><b>Wargear picked:</b> ${wgPicks(x).map(p => esc(p.label)).join("; ")}</div>` : ""}
+              ${x.notes && x.notes.trim() ? `<div class="small"><b>Notes:</b> ${esc(x.notes)}</div>` : ""}
+              ${dsBody(x.ds, { weapons: wp, compact: true })}
+              ${!wp ? `<div class="small muted">Couldn't work out this unit's exact wargear, so every weapon is shown.</div>` : ""}`;
+          };
+          const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0];
+          const total = [u, ...leaders].reduce((a,x) => a + unitCost(x) + enhCost(x), 0);
+          const title = leaders.length ? `${leaders.map(x => esc(unitLabel(l,x))).join(" + ")} + ${esc(unitLabel(l,u))}` : esc(unitLabel(l,u));
+          return `<details class="mcard${leaders.length ? " attached" : ""}"${keyPfx ? keepAttr(keyPfx + u.uid) : ""}><summary>${leaders.length ? `<span class="kind">Attached unit</span>` : ""}<b>${title}</b><span class="muted small">${leaders.length ? "" : (r ? esc(plain(r.label)) + " · " : "")}${total} pts${!leaders.length && u.warlord ? " · Warlord" : ""}</span>${keyPfx ? [...leaders, u].map(x => trackChip("me", x)).join("") : ""}</summary>
+            <div class="stack" style="padding-bottom:6px">${leaders.length ? leaders.map(x => part(x, "Leader")).join("") + part(u, "Bodyguard") : part(u, "")}</div></details>`;
+        }).join("");
+        if (!cards) return "";
+        return `<div class="sec-h" style="margin-top:6px">${esc(catLabel(g, l.army))}</div>` + cards;
+      }).join("");
+}
 function viewRules(){
   if (!D) return needData();
   const l = curList();
@@ -1610,32 +1705,7 @@ function viewRules(){
   } else if (mine) {
     const v = validate(l);
     body = `<label class="check"><input type="checkbox" data-ch="rmine" checked><span>Only units in <b>${esc(l.name)}</b>, with the wargear you picked</span></label>` +
-      (l.units.length ? ROLE_ORDER.map(g => {
-        const us = l.units.filter(u => (D.ds[u.ds] ? roleOf(u.ds) : "Other units") === g); if (!us.length) return "";
-        const cards = us.map(u => {
-          if (!D.ds[u.ds]) return "";
-          const tgt = u.lead && l.units.find(x => x.uid === u.lead);
-          if (tgt && D.ds[tgt.ds]) return "";
-          const leaders = l.units.filter(x => x.lead === u.uid && D.ds[x.ds]);
-          const part = (x, role) => {
-            const wp = unitWeapons(x), e = x.enh && D.enhById[x.enh];
-            const rows = costRows(x.ds), r = rows.find(y => y.line === x.line) || rows[0];
-            return `${role ? `<div class="attach-h"><span class="pill acc">${role}</span> <b>${esc(unitLabel(l,x))}</b> <span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(x)+enhCost(x)} pts${x.warlord ? " · Warlord" : ""}</span></div>` : ""}
-              ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
-              ${wgPicks(x).length ? `<div class="small"><b>Wargear picked:</b> ${wgPicks(x).map(p => esc(p.label)).join("; ")}</div>` : ""}
-              ${x.notes && x.notes.trim() ? `<div class="small"><b>Notes:</b> ${esc(x.notes)}</div>` : ""}
-              ${dsBody(x.ds, { weapons: wp, compact: true })}
-              ${!wp ? `<div class="small muted">Couldn't work out this unit's exact wargear, so every weapon is shown.</div>` : ""}`;
-          };
-          const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0];
-          const total = [u, ...leaders].reduce((a,x) => a + unitCost(x) + enhCost(x), 0);
-          const title = leaders.length ? `${leaders.map(x => esc(unitLabel(l,x))).join(" + ")} + ${esc(unitLabel(l,u))}` : esc(unitLabel(l,u));
-          return `<details class="mcard${leaders.length ? " attached" : ""}"><summary>${leaders.length ? `<span class="kind">Attached unit</span>` : ""}<b>${title}</b><span class="muted small">${leaders.length ? "" : (r ? esc(plain(r.label)) + " · " : "")}${total} pts${!leaders.length && u.warlord ? " · Warlord" : ""}</span></summary>
-            <div class="stack" style="padding-bottom:6px">${leaders.length ? leaders.map(x => part(x, "Leader")).join("") + part(u, "Bodyguard") : part(u, "")}</div></details>`;
-        }).join("");
-        if (!cards) return "";
-        return `<div class="sec-h" style="margin-top:6px">${esc(catLabel(g, l.army))}</div>` + cards;
-      }).join("") : `<div class="empty">This list has no units yet.</div>`);
+      (l.units.length ? listDsHtml(l) : `<div class="empty">This list has no units yet.</div>`);
   } else {
     const q = S.rulesQ.trim().toLowerCase();
     const sr = searchIds(army, q), ids = sr.ids;
@@ -1715,7 +1785,7 @@ function dsBody(id, opt = {}){
   const d = D.ds[id]; if (!d) return "";
   const models = D.models[id] || [], ab = D.abil[id] || [], k = D.kw[id] || [];
   const wg = (D.wg[id] || []).filter(w => !opt.weapons || opt.weapons.has(wStem(w.name)));
-  const box = (l, v, cls = "") => `<div class="sbox${cls}${String(v||"").length > 4 ? " long" : ""}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
+  const box = (l, v, cls = "") => `<div class="sbox${cls}${String(v||"").length > 3 ? " long" : ""}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
   const stats = models.length ? `<div class="statblock">${models.map(m => `${models.length>1?`<div class="mname">${esc(m.name)}</div>`:""}<div class="sg6">${box("M",m.m)}${box("T",m.t)}${box("SV",m.sv)}${box("W",m.w)}${box("LD",m.ld)}${box("OC",m.oc)}</div>`).join("")}</div>
     ${models.filter(m => m.inv_sv && m.inv_sv !== "-").map(m => `<div class="small"><b>Invulnerable save ${esc(/^\d$/.test(m.inv_sv) ? m.inv_sv + "+" : m.inv_sv)}</b>${models.length>1?` (${esc(m.name)})`:""}${m.inv_sv_descr?` · <span class="rich">${sanitize(m.inv_sv_descr)}</span>`:""}</div>`).join("")}` : "";
   const wtable = type => {
@@ -1772,18 +1842,66 @@ function stratsNow(g){
   const pool = [...(l.det ? detStrats(l.army, l.det) : []), ...coreStrats(), ...chal];
   return { l, list: pool.filter(s => okTurn(s) && okPhase(s)) };
 }
-const turnName = n => /^me$/i.test(String(n).trim()) ? "My turn" : esc(n) + "'s turn";
+const turnName = n => { n = String(n).trim(); return /^me$/i.test(n) ? "My turn" : esc(n) + (/s$/i.test(n) ? "' turn" : "'s turn"); };
+/* Player names and army names are the same thing in a game: editing one updates the other. */
+function syncNames(g, p, v, src){
+  g.names[p] = v;
+  if (p === 0) { const ml = S.lists.find(x => x.id === g.listId); if (ml) { ml.name = v; saveList(ml); } }
+  else if (g.opp) g.opp.name = v;
+  saveGame();
+  const set = (sel, prop) => document.querySelectorAll(sel).forEach(el => { if (el !== src) el[prop] = v; });
+  set(`input[data-in="gname"][data-p="${p}"]`, "value"); set(p === 0 ? "#g-myname-in" : "#g-oppname-in", "value");
+  set(p === 0 ? "#g-myname" : "#g-oppname", "textContent");
+  const hd = document.querySelector(`.tracker .hd[data-pn="${p}"]`); if (hd) { const lab = hd.querySelector(".rolelab"); hd.textContent = v; if (lab) hd.appendChild(lab); }
+  const tb = document.querySelector(p === 0 ? ".pl-me-b" : ".pl-opp-b"); if (tb) tb.textContent = turnName(v).replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+  const sh = document.querySelectorAll(".card.pl-me > .row h3, .card.pl-opp > .row h3"); sh.forEach(h => { if (h.closest(p === 0 ? ".pl-me" : ".pl-opp") && /secondaries$/.test(h.textContent)) h.textContent = v + ": secondaries"; });
+}
+/* ---- casualty tracker: models and wounds left, per unit, for this game ---- */
+function trackInfo(side, u){
+  const g = S.game || {}, key = side + ":" + u.uid, start = Math.max(1, unitModels(u));
+  const W = Math.max(1, num((D.models[u.ds]||[])[0]?.w) || 1);
+  const t = (g.track || {})[key] || { m:start, w:W };
+  const m = Math.min(start, t.m), w = Math.min(W, t.w);
+  const dead = m <= 0 || (start === 1 && w <= 0);
+  const half = !dead && (start > 1 ? m < start / 2 : w < W / 2);
+  return { key, start, W, m, w, dead, half };
+}
+function trackChip(side, u){
+  if (!S.game || !S.game.track || !S.game.track[side + ":" + u.uid]) return "";
+  const t = trackInfo(side, u);
+  if (t.dead) return `<span class="pill err">Destroyed</span>`;
+  const txt = t.start > 1 ? `${t.m}/${t.start} models` : `${t.w}/${t.W} W`;
+  return `<span class="pill${t.half ? " warn" : ""}">${txt}</span>`;
+}
+function trackHtml(side, u){
+  const t = trackInfo(side, u), k = esc(t.key);
+  const step = (op, label, val, max, lab) => `<div class="trk"><span class="trk-l">${lab}</span><button class="trk-b" data-act="trk" data-k="${k}" data-op="${op}-" aria-label="${label} down">−</button><span class="trk-v num">${val}<small>/${max}</small></span><button class="trk-b" data-act="trk" data-k="${k}" data-op="${op}+" aria-label="${label} up">+</button></div>`;
+  return `<div class="trkbox${t.dead ? " dead" : ""}" data-start="${t.start}" data-w="${t.W}">
+    ${t.start > 1 ? step("m", "Models", t.m, t.start, "Models left") : ""}
+    ${t.W > 1 && !t.dead ? step("w", "Wounds", t.w, t.W, t.start > 1 ? "Wounds on damaged model" : "Wounds left") : ""}
+    ${t.start === 1 && t.W === 1 ? `<button class="btn small${t.dead ? "" : " danger"}" data-act="trk" data-k="${k}" data-op="${t.dead ? "revive" : "kill"}">${t.dead ? "Bring back" : "Mark destroyed"}</button>` : ""}
+    ${t.dead ? `<span class="pill err">Destroyed</span>` : t.half ? `<span class="pill warn">Below Half-strength</span>` : ""}
+  </div>`;
+}
+function gameDsHtml(g){
+  const l = S.lists.find(x => x.id === g.listId);
+  const mine = l ? `<details class="card pl-me gds"${keepAttr("g-mine")}><summary><span class="gds-h">My army</span><span class="small muted"><span id="g-myname">${esc(l.name)}</span> · ${validate(l).total} pts · ${l.units.length} units</span></summary>
+      <div class="stack" style="margin-top:10px"><label class="f" for="g-myname-in">Army name<input type="text" id="g-myname-in" data-in="gmyname" value="${esc(l.name)}"></label>${l.units.length ? listDsHtml(l, "gm-") : `<div class="small muted">This list has no units yet.</div>`}</div></details>`
+    : `<div class="card pl-me"><span class="gds-h">My army</span><div class="small muted">Choose your list in Battle mode above to see your datasheets here.</div></div>`;
+  return `<div class="stack" style="gap:10px"><div class="sec-h">Datasheets</div>${mine}${oppHtml(g)}</div>`;
+}
 function oppHtml(g){
   const o = g.opp;
-  if (!o) return `<div class="card stack"><div class="row"><h3 class="grow">Opponent's army</h3></div><p class="small muted" style="margin:0">Import your opponent's list to check their datasheets during the game.</p><button class="btn" data-act="oppimport">Import opponent's list</button></div>`;
+  if (!o) return `<div class="card stack pl-opp"><div class="row"><h3 class="grow">Opponent's army</h3></div><p class="small muted" style="margin:0">Import your opponent's list to check their datasheets during the game.</p><button class="btn" data-act="oppimport">Import opponent's list</button></div>`;
   const tot = o.units.reduce((a,u) => a + unitCost(u) + enhCost(u), 0);
-  return `<div class="card stack"><div class="row"><h3 class="grow">Opponent: ${esc(o.name)}</h3><span class="pill num">${tot} pts</span></div>
-    <div class="small muted">${esc(armyName(o.army, o))}${o.det ? " · " + esc(o.det.name) : ""} · ${o.units.length} units</div>
+  return `<details class="card pl-opp gds"${keepAttr("g-opp")}><summary><span class="gds-h">Opponent's army</span><span class="small muted"><span id="g-oppname">${esc(o.name)}</span> · ${tot} pts · ${o.units.length} units</span></summary><div class="stack" style="margin-top:10px">
+    <label class="f" for="g-oppname-in">Army name<input type="text" id="g-oppname-in" data-in="goppname" value="${esc(o.name)}"></label>
+    <div class="small muted">${esc(armyName(o.army, o))}${o.det ? " · " + esc(o.det.name) : ""}</div>
     ${o.units.filter(u => D.ds[u.ds]).map(u => { const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; const e = u.enh && D.enhById[u.enh];
-      return `<details class="mcard"><summary><b>${esc(unitLabel(o,u))}</b><span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(u)+enhCost(u)} pts${u.warlord ? " · Warlord" : ""}</span></summary><div class="stack" style="padding-bottom:6px">
+      return `<details class="mcard"${keepAttr("go-" + u.uid)}><summary><b>${esc(unitLabel(o,u))}</b><span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(u)+enhCost(u)} pts${u.warlord ? " · Warlord" : ""}</span>${trackChip("opp", u)}</summary><div class="stack" style="padding-bottom:6px">${trackHtml("opp", u)}
         ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
         ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true })}</div></details>`; }).join("")}
-    <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div>`;
+    <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div></details>`;
 }
 function battleHtml(g){
   const lists = S.lists;
@@ -1792,9 +1910,12 @@ function battleHtml(g){
   return `<div class="card stack battle">
     <div class="row"><h3 class="grow">Battle mode</h3><span class="pill acc num">Round ${g.round}</span></div>
     <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>
-    <div class="seg" role="group" aria-label="Whose turn"><button data-act="gturn" data-v="me" aria-pressed="${g.turn==="me"}">${turnName(g.names[0])}</button><button data-act="gturn" data-v="opp" aria-pressed="${g.turn==="opp"}">${turnName(g.names[1])}</button></div>
+    ${!g.role ? `<div class="rolepick"><div class="sec-h">Attacker or defender?</div><div class="small muted">Choose before the game starts. The Attacker takes the first turn and is always the left column in victory points.</div>
+      <div class="row"><button class="btn rolebtn grow" data-act="grole" data-v="att"><b>I'm the Attacker</b><span class="small">I go first</span></button><button class="btn rolebtn grow" data-act="grole" data-v="def"><b>I'm the Defender</b><span class="small">Opponent goes first</span></button></div></div>`
+    : `<div class="row small"><span class="pill pl-me-pill">You: ${g.role === "att" ? "Attacker" : "Defender"}</span><span class="pill pl-opp-pill">Opponent: ${g.role === "att" ? "Defender" : "Attacker"}</span>${g.round === 1 && g.phase === 0 && g.turn === (g.role === "att" ? "me" : "opp") ? `<span class="grow"></span><button class="btn small" data-act="grole" data-v="">Change</button>` : ""}</div>
+    <div class="seg" role="group" aria-label="Whose turn">${gOrder(g).map(p => p === 0 ? `<button class="pl-me-b" data-act="gturn" data-v="me" aria-pressed="${g.turn==="me"}">${turnName(g.names[0])}</button>` : `<button class="pl-opp-b" data-act="gturn" data-v="opp" aria-pressed="${g.turn==="opp"}">${turnName(g.names[1])}</button>`).join("")}</div>
     <div class="phases" role="group" aria-label="Phase">${PHASES.map((p,i) => `<button data-act="gphase" data-v="${i}" aria-pressed="${g.phase===i}" aria-label="${p} phase">${["Command","Move","Shoot","Charge","Fight"][i]}</button>`).join("")}</div>
-    <div class="row"><span class="small muted grow">${who} ${PHASES[g.phase]} phase${g.phase===0 ? " · both players gained 1CP" : ""}</span><button class="btn primary" data-act="gnext">Next phase →</button></div>
+    <div class="row"><span class="small muted grow">${who} ${PHASES[g.phase]} phase${g.phase===0 ? " · both players gained 1CP" : ""}</span><button class="btn primary" data-act="gnext">Next phase →</button></div>`}
     ${l ? `<div><div class="sec-h">Stratagems you can use now · ${list.length}</div>
       <div class="cpnote">You have <b>${num(g.cp[0])} CP</b>.${list.some(s => num(s.cp_cost) > num(g.cp[0])) ? " Faded ones cost more than you have." : ""}</div>
       ${list.length ? list.map(s => stratRow(s, num(g.cp[0]))).join("") : `<div class="small muted">Nothing usable in this phase.</div>`}
@@ -1804,8 +1925,11 @@ function battleHtml(g){
     ${S.marks.length ? `<details class="dsub"><summary>★ Your bookmarks · ${S.marks.length}</summary>${marksHtml()}</details>` : ""}
   </div>`;
 }
-function blankGame(){ return { listId:"", turn:"me", phase:0, size:"Strike Force", dep:"", pri:"", twist:"", primary:"", deploy:"", round:1, cp:[0,0], vp:[[0,0,0,0,0],[0,0,0,0,0]], sec:[[0,0,0,0,0],[0,0,0,0,0]], names:["Me","Opponent"], notes:"", ps:[blankPlayerSec(), blankPlayerSec()] }; }
-function fixGame(g){ const b = blankGame(); if (!g.listId && S.cur && S.lists.some(x => x.id === S.cur)) g.listId = S.cur; for (const k in b) if (g[k] === undefined) g[k] = b[k]; g.ps = (g.ps||[]).length === 2 ? g.ps : b.ps; return g; }
+const gOrder = g => g.role === "def" ? [1, 0] : [0, 1];
+const roleOf2 = (g, p) => (g.role === "att") === (p === 0) ? "Attacker" : "Defender";
+function blankGame(){ return { listId:"", role:"", turn:"me", phase:0, size:"Strike Force", dep:"", pri:"", twist:"", primary:"", deploy:"", round:1, cp:[0,0], vp:[[0,0,0,0,0],[0,0,0,0,0]], sec:[[0,0,0,0,0],[0,0,0,0,0]], names:["Me","Opponent"], notes:"", ps:[blankPlayerSec(), blankPlayerSec()] }; }
+function fixGame(g){ const b = blankGame(); if (!g.listId && S.cur && S.lists.some(x => x.id === S.cur)) g.listId = S.cur;
+  if (g.names) { const ml = S.lists.find(x => x.id === g.listId); if (ml && g.names[0] !== ml.name) g.names[0] = ml.name; if (g.opp && g.names[1] !== g.opp.name) g.names[1] = g.opp.name; } for (const k in b) if (g[k] === undefined) g[k] = b[k]; g.ps = (g.ps||[]).length === 2 ? g.ps : b.ps; return g; }
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 function shuffle(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 const primList = g => g.size === "Asymmetric War" ? M.asymmetricPrimaries : M.primaries;
@@ -1849,13 +1973,13 @@ function secPanel(g, p){
           return pool.length ? `<label class="f" for="gpick${p}">Or pick a specific card${p === 1 ? " (the one your opponent drew)" : ""}<select id="gpick${p}" data-ch="gpick" data-p="${p}"><option value="">Choose a card…</option>${[...pool].sort().map(n => `<option>${esc(n)}</option>`).join("")}</select></label>` : ""; })() : "")
       + (ps.done.length ? `<div class="small muted">Achieved: ${ps.done.map(esc).join(", ")}</div>` : "");
   }
-  return `<div class="card stack"><div class="row"><h3 class="grow">${esc(g.names[p])}: secondaries</h3>
+  return `<div class="card stack ${p === 0 ? "pl-me" : "pl-opp"}"><div class="row"><h3 class="grow">${esc(g.names[p])}: secondaries</h3>
     <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div></div>${body}</div>`;
 }
 function viewGame(){
   const g = fixGame(S.game ||= blankGame());
   const tot = p => g.vp[p].reduce((a,b)=>a+num(b),0) + g.sec[p].reduce((a,b)=>a+num(b),0);
-  const cell = (arr, p, r) => `<input type="number" inputmode="numeric" min="0" aria-label="${esc(g.names[p])} round ${r+1}" data-in="g" data-k="${arr}" data-p="${p}" data-r="${r}" value="${g[arr][p][r]||""}" placeholder="0">`;
+  const cell = (arr, p, r) => `<input class="${p === 0 ? "pl-me-in" : "pl-opp-in"}" type="number" inputmode="numeric" min="0" aria-label="${esc(g.names[p])} round ${r+1}" data-in="g" data-k="${arr}" data-p="${p}" data-r="${r}" value="${g[arr][p][r]||""}" placeholder="0">`;
   let setup;
   if (M) {
     const deps = depList(g), prims = primList(g), dep = deps.find(d => d.name === g.dep), pri = prims.find(c => c.name === g.pri), tw = M.twists.find(c => c.name === g.twist);
@@ -1885,9 +2009,9 @@ function viewGame(){
   }
   return `<div class="stack">
     ${battleHtml(g)}
-    ${D ? oppHtml(g) : ""}
+    ${D ? gameDsHtml(g) : ""}
     <div class="row">
-      ${[0,1].map(p => `<div class="card grow" style="text-align:center;flex-basis:140px"><input type="text" data-in="gname" data-p="${p}" value="${esc(g.names[p])}" aria-label="Player name" style="text-align:center;font-weight:600">
+      ${gOrder(g).map(p => `<div class="card grow ${p === 0 ? "pl-me" : "pl-opp"}" style="text-align:center;flex-basis:140px"><input type="text" data-in="gname" data-p="${p}" value="${esc(g.names[p])}" aria-label="Player name" style="text-align:center;font-weight:600">${g.role ? `<div class="rolelab" style="margin-top:4px">${roleOf2(g, p)}</div>` : ""}
         <div class="sec-h" style="margin-top:8px">Total VP</div><div class="big num" id="tot${p}">${tot(p)}</div>
         <div class="sec-h" style="margin-top:8px">Command points</div>
         <div class="stepper"><button data-act="gcp" data-p="${p}" data-d="-1" aria-label="Spend CP">−</button><span class="big num">${g.cp[p]}</span><button data-act="gcp" data-p="${p}" data-d="1" aria-label="Gain CP">+</button></div></div>`).join("")}
@@ -1898,13 +2022,14 @@ function viewGame(){
     <div class="card">
       <div class="sec-h">Victory points by round</div>
       <div class="tracker">
-        <span></span><span class="hd">${esc(g.names[0])}</span><span class="hd">${esc(g.names[1])}</span>
-        ${[0,1,2,3,4].map(r => `<span class="hd" style="text-align:left">R${r+1} primary</span>${cell("vp",0,r)}${cell("vp",1,r)}<span class="hd" style="text-align:left">R${r+1} secondary</span>${cell("sec",0,r)}${cell("sec",1,r)}`).join("")}
+        <span></span>${gOrder(g).map(p => `<span class="hd ${p === 0 ? "pl-me-t" : "pl-opp-t"}" data-pn="${p}">${esc(g.names[p])}${g.role ? `<small class="rolelab">${roleOf2(g, p)}</small>` : ""}</span>`).join("")}
+        ${[0,1,2,3,4].map(r => `<span class="hd" style="text-align:left">R${r+1} primary</span>${gOrder(g).map(p => cell("vp",p,r)).join("")}<span class="hd" style="text-align:left">R${r+1} secondary</span>${gOrder(g).map(p => cell("sec",p,r)).join("")}`).join("")}
       </div>
     </div>
     <label class="f" for="gn">Game notes<textarea id="gn" data-in="gm" data-k="notes" placeholder="Things to remember">${esc(g.notes)}</textarea></label>
     <button class="btn primary" data-act="gfinish">${S.confirmFinish ? "Tap again to save this game to your history" : "Finish game and save result"}</button>
-    ${S.history.length ? `<details class="card"><summary><b>Past games</b> <span class="muted small">${S.history.length}</span></summary><div class="stack" style="margin-top:8px">${S.history.map(h => `<div class="hrow"><span class="pill ${h.result === "w" ? "ok" : h.result === "l" ? "err" : ""}">${h.result === "w" ? "Win" : h.result === "l" ? "Loss" : "Draw"}</span><div class="grow"><b>${esc(h.listName)}</b> <span class="num">${h.score[0]}–${h.score[1]}</span><div class="small muted">vs ${esc(h.opp)}${h.mission ? " · " + esc(h.mission) : ""} · ${new Date(h.date).toLocaleDateString("en-NZ")}</div></div><button class="iconbtn" data-act="hdel" data-id="${h.id}" aria-label="Delete this game">${SVG.trash}</button></div>`).join("")}</div></details>` : ""}
+    ${S.history.length ? `<details class="card"><summary><b>Past games</b> <span class="muted small">${S.history.length}</span></summary><div class="stack" style="margin-top:8px">${S.history.map(h => `<div class="hrow"><span class="pill ${h.result === "w" ? "ok" : h.result === "l" ? "err" : ""}">${h.result === "w" ? "Win" : h.result === "l" ? "Loss" : "Draw"}</span><div class="grow"><b>${esc(h.listName)}</b> <span class="num">${h.score[0]}–${h.score[1]}</span><div class="small muted">vs ${esc(h.opp)}${h.mission ? " · " + esc(h.mission) : ""} · ${new Date(h.date).toLocaleDateString("en-NZ")}</div></div><button class="btn small" data-act="hcopy" data-id="${h.id}">Copy report</button><button class="iconbtn" data-act="hdel" data-id="${h.id}" aria-label="Delete this game">${SVG.trash}</button></div>`).join("")}
+      ${S.history.length > 1 ? `<button class="btn small" data-act="hcopyall">Copy all game reports</button>` : ""}<div class="small muted">Copy a report to paste into Claude, Messages or your notes.</div></div></details>` : ""}
     <button class="btn danger" data-act="gnew">${S.confirmGame ? "Tap again to clear the tracker" : "New game"}</button>
   </div>`;
 }
@@ -2262,7 +2387,7 @@ document.addEventListener("click", e => {
       if (!txt.trim()) { $("#impmsg").innerHTML = `<div class="issue err">Paste a list first.</div>`; break; }
       const nl = parseListText(txt);
       if (!nl) { $("#impmsg").innerHTML = `<div class="issue err">Couldn't recognise any units in that list. Check it includes unit names with their points, e.g. "Intercessor Squad (80 points)".</div>`; break; }
-      if (S.impTarget === "opp") { const g = fixGame(S.game ||= blankGame()); g.opp = nl; if (/^opponent$/i.test(g.names[1])) g.names[1] = armyName(nl.army, nl); saveGame(); closeSheet("import"); render(); toast(`Opponent: ${nl.units.length} units of ${armyName(nl.army)}`); break; }
+      if (S.impTarget === "opp") { const g = fixGame(S.game ||= blankGame()); g.opp = nl; g.names[1] = nl.name; saveGame(); closeSheet("import"); render(); toast(`Opponent: ${nl.units.length} units of ${armyName(nl.army)}`); break; }
       S.lists.unshift(nl); S.cur = nl.id; LS.set("cur", nl.id); saveList(nl, true);
       closeSheet("import"); S.view = "build"; LS.set("view","build"); render();
       toast(`Imported ${nl.units.length} unit${nl.units.length===1?"":"s"} as ${armyName(nl.army)}`); break;
@@ -2292,12 +2417,35 @@ document.addEventListener("click", e => {
       const g = fixGame(S.game ||= blankGame()), l2 = S.lists.find(x => x.id === g.listId);
       const tot = p => g.vp[p].reduce((a,b)=>a+num(b),0) + g.sec[p].reduce((a,b)=>a+num(b),0);
       const sc = [tot(0), tot(1)];
-      S.history.unshift({ id:uid(), date:Date.now(), listId: g.listId || "", listName: l2 ? l2.name : g.names[0], army: l2 ? l2.army : "", opp: g.opp ? `${g.opp.name} (${armyName(g.opp.army, g.opp)})` : g.names[1], mission: [g.pri, g.dep].filter(Boolean).join(" · ") || g.primary || "", score: sc, result: sc[0] > sc[1] ? "w" : sc[0] < sc[1] ? "l" : "d" });
+      S.history.unshift({ id:uid(), date:Date.now(), listId: g.listId || "", listName: l2 ? l2.name : g.names[0], army: l2 ? l2.army : "", opp: g.opp ? `${g.opp.name} (${armyName(g.opp.army, g.opp)})` : g.names[1], mission: [g.pri, g.dep].filter(Boolean).join(" · ") || g.primary || "", score: sc, result: sc[0] > sc[1] ? "w" : sc[0] < sc[1] ? "l" : "d",
+        detail: { role: g.role || "", names: g.names.slice(), vp: JSON.parse(JSON.stringify(g.vp)), sec: JSON.parse(JSON.stringify(g.sec)), twist: g.twist || "", size: g.size || "", notes: g.notes || "",
+          secs: g.ps.map(ps => ({ mode: ps.mode, achieved: ps.done.slice(), discarded: ps.gone.slice(), active: ps.active.slice(), fixed: ps.fixed.filter(Boolean) })),
+          myList: l2 && D ? exportText(l2, "bb") : "", oppList: g.opp && D ? exportText(g.opp, "bb") : "" } });
       saveHistory();
       const keep = { listId: g.listId, names: g.names }; S.game = Object.assign(blankGame(), keep); saveGame();
       toast(`Saved: ${sc[0]}–${sc[1]} ${sc[0] > sc[1] ? "win" : sc[0] < sc[1] ? "loss" : "draw"}`); render(); break;
     }
+    case "hcopy": { const h = S.history.find(x => x.id === t.dataset.id); if (h) copyText(gameReport(h)); break; }
+    case "hcopyall": copyText(S.history.map(gameReport).join("\n\n==========\n\n")); break;
     case "hdel": S.history = S.history.filter(h => h.id !== t.dataset.id); saveHistory(); render(); break;
+    case "trk": {
+      const g = fixGame(S.game ||= blankGame()); g.track ||= {};
+      const box = t.closest(".trkbox"), start = +box.dataset.start, W = +box.dataset.w, k = t.dataset.k, op = t.dataset.op;
+      const c = g.track[k] || { m:start, w:W };
+      if (op === "m-") { c.m = Math.max(0, c.m - 1); c.w = W; }
+      else if (op === "m+") { c.m = Math.min(start, c.m + 1); }
+      else if (op === "w-") { if (c.w > 1) c.w--; else if (start > 1) { c.m = Math.max(0, c.m - 1); c.w = W; } else c.w = 0; if (start === 1) c.m = c.w > 0 ? 1 : 0; }
+      else if (op === "w+") { c.w = Math.min(W, c.w + 1); if (start === 1 && c.w > 0) c.m = 1; }
+      else if (op === "kill") { c.m = 0; c.w = 0; }
+      else if (op === "revive") { c.m = start; c.w = W; }
+      if (c.m === start && c.w === W) delete g.track[k]; else g.track[k] = c;
+      saveGame(); render(); break;
+    }
+    case "grole": { const g = fixGame(S.game ||= blankGame()); g.role = t.dataset.v;
+      if (g.role) { if (g.round === 1 && g.phase === 0) { g.turn = g.role === "att" ? "me" : "opp"; g.firstTurn = g.turn;
+        /* the game starts in the first Command phase, where both players gain 1CP (only once) */
+        if (!g.startCP) { g.cp = g.cp.map(c => num(c) + 1); g.startCP = true; toast("Command phase: both players gain 1CP"); } } }
+      saveGame(); render(); break; }
     case "gturn": { const g = fixGame(S.game ||= blankGame()); g.turn = t.dataset.v; saveGame(); render(); break; }
     case "gphase": { const g = fixGame(S.game ||= blankGame()); g.phase = +t.dataset.v; saveGame(); render(); break; }
     case "gnext": {
@@ -2330,7 +2478,11 @@ document.addEventListener("input", e => {
   else if (k === "rulesq") { S.rulesQ = t.value; const r = searchIds(l ? l.army : S.rulesArmy, t.value); $("#rqres").innerHTML = dsRows(r.ids, false, r.hints); }
   else if (k === "g") { const g = S.game; g[t.dataset.k][+t.dataset.p][+t.dataset.r] = num(t.value); saveGame(); [0,1].forEach(p => { const el = $("#tot"+p); if (el) el.textContent = g.vp[p].reduce((a,b)=>a+num(b),0) + g.sec[p].reduce((a,b)=>a+num(b),0); }); }
   else if (k === "gm") { S.game[t.dataset.k] = t.value; saveGame(); }
-  else if (k === "gname") { S.game.names[+t.dataset.p] = t.value; saveGame(); }
+  else if (k === "gmyname" || k === "goppname" || k === "gname") {
+    const g = S.game; if (!g) return;
+    const p = k === "gmyname" ? 0 : k === "goppname" ? 1 : +t.dataset.p, v = t.value;
+    syncNames(g, p, v, t); return;
+  }
 });
 document.addEventListener("change", e => {
   const t = e.target, k = t.dataset.ch; if (!k) return; const l = curList();
@@ -2338,6 +2490,7 @@ document.addEventListener("change", e => {
   if (k === "lsize") l.points = +t.value;
   else if (k === "ldet") { const d = detachmentsFor(l.army).find(x => x.key === t.value); l.det = d || null; l.units.forEach(x => { if (x.enh && D.enhById[x.enh] && !matchDet(D.enhById[x.enh], l.det)) x.enh = null; }); }
   else if (k === "usize" && u) u.line = t.value;
+  else if (k === "uaddon" && u) { (u.addons ||= {}); if (t.checked) u.addons[t.dataset.line] = 1; else delete u.addons[t.dataset.line]; }
   else if (k === "warlord" && u) { l.units.forEach(x => x.warlord = false); u.warlord = t.checked; }
   else if (k === "uenh" && u) u.enh = t.value || null;
   else if (k === "ulead" && u) u.lead = t.value || null;
@@ -2354,7 +2507,7 @@ document.addEventListener("change", e => {
     saveGame(); render(); return;
   }
   else if (k === "gchal") { const g = fixGame(S.game ||= blankGame()); g.chal = t.value; saveGame(); render(); return; }
-  else if (k === "glist") { const g = fixGame(S.game ||= blankGame()); g.listId = t.value; saveGame(); render(); return; }
+  else if (k === "glist") { const g = fixGame(S.game ||= blankGame()); g.listId = t.value; const ml = S.lists.find(x => x.id === t.value); if (ml) g.names[0] = ml.name; saveGame(); render(); return; }
   else if (k === "gdep" || k === "gpri" || k === "gtw" || k === "gpool" || k === "gfixed") {
     const g = fixGame(S.game ||= blankGame());
     if (k === "gdep") g.dep = t.value; else if (k === "gpri") g.pri = t.value; else if (k === "gtw") g.twist = t.value;
@@ -2590,7 +2743,7 @@ const b64u = bytes => { let s = ""; bytes.forEach(b => s += String.fromCharCode(
 const unb64u = str => { const s = atob(str.replace(/-/g,"+").replace(/_/g,"/")); return Uint8Array.from(s, c => c.charCodeAt(0)); };
 async function encodeList(l){
   const idx = new Map(l.units.map((u, i) => [u.uid, i]));
-  const o = { v:1, n:l.name, a:l.army, p:l.points, d:l.det ? l.det.key : null, u: l.units.map(u => [u.ds, u.line || 0, u.enh || 0, u.warlord ? 1 : 0, u.lead && idx.has(u.lead) ? idx.get(u.lead) : -1, u.wg || 0, u.wgN || 0, (u.opts && u.opts.length) ? u.opts : 0]) };
+  const o = { v:1, n:l.name, a:l.army, p:l.points, d:l.det ? l.det.key : null, u: l.units.map(u => [u.ds, u.line || 0, u.enh || 0, u.warlord ? 1 : 0, u.lead && idx.has(u.lead) ? idx.get(u.lead) : -1, u.wg || 0, u.wgN || 0, (u.opts && u.opts.length) ? u.opts : 0, u.addons || 0]) };
   const cs = new CompressionStream("deflate-raw");
   const buf = await new Response(new Blob([JSON.stringify(o)]).stream().pipeThrough(cs)).arrayBuffer();
   return b64u(new Uint8Array(buf));
@@ -2598,7 +2751,7 @@ async function encodeList(l){
 async function decodeList(code){
   const ds = new DecompressionStream("deflate-raw");
   const o = JSON.parse(await new Response(new Blob([unb64u(code)]).stream().pipeThrough(ds)).text());
-  const units = o.u.map(x => ({ uid:uid(), ds:x[0], name:D.ds[x[0]]?.name || "Unknown unit", line:x[1] || null, enh:x[2] || null, warlord:!!x[3], lead:null, opts:x[7] || [], wg:x[5] || undefined, wgN:x[6] || undefined, notes:"" }));
+  const units = o.u.map(x => ({ uid:uid(), ds:x[0], name:D.ds[x[0]]?.name || "Unknown unit", line:x[1] || null, enh:x[2] || null, warlord:!!x[3], lead:null, opts:x[7] || [], wg:x[5] || undefined, wgN:x[6] || undefined, addons:x[8] || undefined, notes:"" }));
   o.u.forEach((x, i) => { if (x[4] >= 0 && units[x[4]]) units[i].lead = units[x[4]].uid; });
   const det = o.d ? detachmentsFor(o.a).find(d => d.key === o.d) || null : null;
   return { id:"shared", name:o.n, army:o.a, armyName:armyName(o.a), points:o.p, det, units, shared:true };
@@ -2719,6 +2872,7 @@ function marksHtml(){
   return S.marks.map(markHtml).join("");
 }
 
+document.addEventListener("toggle", e => { const k = e.target && e.target.dataset && e.target.dataset.keep; if (k) S.keep[k] = e.target.open; }, true);
 window.addEventListener("hashchange", () => { if (/^#list=/.test(location.hash)) openSharedFromHash(); });
 (async function boot(){
   try { const json = await IDB.get("wd"); if (json) D = buildIndex(JSON.parse(json)); } catch {}
