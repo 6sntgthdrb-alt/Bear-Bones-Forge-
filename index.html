@@ -715,6 +715,18 @@ details.sectfold{display:block}
 .sectfold > summary::after{content:"▾";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--acc-text,var(--accent));transition:transform .2s}
 .sectfold:not([open]) > summary::after{transform:translateY(-50%) rotate(-90deg)}
 .sect-b{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.autotag{font:600 .7rem var(--ui,inherit);text-transform:none;letter-spacing:0;padding:1px 7px;border-radius:999px;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--text);margin-left:6px}
+.abfx{align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
+.abfx .abtx{display:block;font-size:.8rem;color:var(--muted);margin-top:2px;line-height:1.35}
+.abfx.abdef b::after{content:" (defence)";font-weight:400;font-size:.75rem;color:var(--muted)}
+.abfxbox summary{font-weight:700}
+.brief .srow.brow > summary .sname{white-space:normal}
+.bgrid{display:grid;gap:8px;padding:6px 0 8px}
+.bh{font:700 .72rem var(--ui,inherit);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:3px}
+.rng{display:block;font-size:.88rem;padding:2px 0}.rng b{display:inline-block;min-width:3.2em;color:var(--acc-text,var(--accent))}
+.rng .half{font-size:.75rem;color:var(--muted);margin-left:4px}
+.brow2{padding:6px 0;border-top:1px solid var(--line)}.brow2:first-child{border-top:0}.brow2 .pill{margin:3px 3px 0 0}
+.bonce{padding:6px 0;border-top:1px solid var(--line)}.bonce.used span{opacity:.5;text-decoration:line-through}
 </style>
 </head>
 <body data-army="">
@@ -1932,10 +1944,12 @@ function viewRules(){
   const l = curList();
   const army = l ? l.army : S.rulesArmy;
   const det = l ? l.det : null;
-  const tabs = [["core","Core rules"],["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
+  const tabs = [["core","Core rules"],["brief","🧭 Briefing"],["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
   const mine = l && S.rulesMine !== false;
   let body = "";
-  if (S.rulesTab === "core") {
+  if (S.rulesTab === "brief") {
+    body = l ? briefingHtml(l) : `<div class="empty">Open one of your lists on the Lists tab and the briefing will study it for you.</div>`;
+  } else if (S.rulesTab === "core") {
     body = `<input type="search" id="coreq" data-in="coreq" placeholder="Search the Core Rules, e.g. cover, transport, charge" value="${esc(S.coreQ||"")}" aria-label="Search core rules"><div id="coreres">${coreRefHtml(S.coreQ)}</div>`;
   } else if (S.rulesTab === "marks") {
     body = `<div class="sec-h">Your bookmarks · ${S.marks.length}</div>` + marksHtml();
@@ -2186,35 +2200,43 @@ function targetOf(side, u){
   return { name: D.ds[u.ds].name, t:num(m0.t), sv:num(m0.sv) || 7, inv:num(m0.inv_sv) || 0, w:Math.max(1, num(m0.w)), models:Math.max(1, alive), fnp:unitFnp(u), kw:D.kwSet[u.ds] || new Set() };
 }
 function woundNeed(S_, T){ return S_ >= 2*T ? 2 : S_ > T ? 3 : S_ === T ? 4 : 2*S_ <= T ? 6 : 5; }
-function saveNeed(w, tg, cover){ const ap = Math.abs(num(w.ap)), k = weaponKw(w);
+function saveNeed(w, tg, cover, apPlus = 0, inv = 0){ const ap = Math.abs(num(w.ap)) + apPlus, k = weaponKw(w);
   let arm = tg.sv + ap; if (cover && !k.ignoresCover && !(tg.sv <= 3 && ap === 0)) arm -= 1;
-  const need = tg.inv ? Math.min(arm, tg.inv) : arm; return Math.max(2, need); }
+  const iv = [tg.inv, inv].filter(Boolean); const need = iv.length ? Math.min(arm, ...iv) : arm; return Math.max(2, need); }
 function calcAttack(w, firing, tg, o = {}){
-  const k = weaponKw(w), melee = /melee/i.test(w.type || w.range || "");
-  let A = avgDice(w.a) * firing;
+  const k = Object.assign({}, weaponKw(w)), melee = /melee/i.test(w.type || w.range || ""), fx = o.fx || {};
+  if (fx.lethal) k.lethal = true; if (fx.dev) k.dev = true; if (fx.sustained) k.sustained = Math.max(k.sustained, fx.sustained); if (fx.ignoresCover) k.ignoresCover = true;
+  const clamp1 = x => Math.max(-1, Math.min(1, x));
+  let A = (avgDice(w.a) + (fx.aMod || 0)) * firing;
   if (k.rapid && o.half) A += k.rapid * firing;
   if (k.blast) A += Math.floor(tg.models / 5) * firing;
-  const re = (p, mode, fail) => mode === "all" ? p + (1 - p) * p : mode === "1" ? p + (1/6) * p : p;
-  let hitP = 1, critP = 0;
-  if (!k.torrent) { let need = num(w.bs_ws) || 4; if (k.heavy && o.still && !melee) need -= 1; need = Math.min(6, Math.max(2, need));
-    hitP = (7 - need) / 6; critP = 1/6; const rr = o.rrHit || "";
+  const rrMax = (a, b) => a === "all" || b === "all" ? "all" : a === "1" || b === "1" ? "1" : "";
+  const re = (p, mode) => mode === "all" ? p + (1 - p) * p : mode === "1" ? p + (1/6) * p : p;
+  let hitP = 1, critP = 0, hitNeed = 0;
+  if (!k.torrent) { const mod = clamp1((k.heavy && o.still && !melee ? 1 : 0) + (fx.hitMod || 0) + (fx.tgtHitMod && (!fx.tgtHitRanged || !melee) ? fx.tgtHitMod : 0));
+    hitNeed = Math.min(6, Math.max(2, (num(w.bs_ws) || 4) - mod));
+    const critOn = fx.crit5 ? 5 : 6;
+    hitP = (7 - hitNeed) / 6; critP = (7 - critOn) / 6; hitP = Math.max(hitP, critP); const rr = rrMax(o.rrHit || "", fx.rrHit || "");
     const hp2 = re(hitP, rr); critP = rr === "all" ? critP + (1 - hitP) * critP : rr === "1" ? critP + (1/6) * critP : critP; hitP = hp2; }
   let hits = A * hitP; const crits = A * critP;
   if (k.sustained) hits += crits * k.sustained;
   const auto = k.lethal ? crits : 0, toRoll = hits - auto;
-  let wNeed = woundNeed(num(w.s), tg.t); if (k.lance && o.charged) wNeed = Math.max(2, wNeed - 1);
+  const S_ = num(w.s) + (fx.sMod || 0);
+  const wMod = clamp1((k.lance && o.charged ? 1 : 0) + (fx.woundMod || 0) + (fx.tgtWoundMod && (!fx.tgtWoundIfStronger || S_ > tg.t) ? fx.tgtWoundMod : 0));
+  let wNeed = Math.min(6, Math.max(2, woundNeed(S_, tg.t) - wMod));
   let critT = 6; k.anti.forEach(a => { if ([...tg.kw].some(x => x === a.kw || x.includes(a.kw))) critT = Math.min(critT, a.n); });
   let wP = Math.max((7 - wNeed) / 6, (7 - critT) / 6), cwP = (7 - critT) / 6;
-  const rrW = k.twin ? "all" : (o.rrWound || "");
+  const rrW = k.twin ? "all" : rrMax(o.rrWound || "", fx.rrWound || "");
   const wP2 = re(wP, rrW); cwP = rrW === "all" ? cwP + (1 - wP) * cwP : rrW === "1" ? cwP + (1/6) * cwP : cwP; wP = wP2;
   const wounds = toRoll * wP + auto, devW = k.dev ? toRoll * cwP : 0, normal = wounds - devW;
-  const sNeed = saveNeed(w, tg, o.cover && !melee), failP = sNeed > 6 ? 1 : (sNeed - 1) / 6;
+  const sNeed = saveNeed(w, tg, (o.cover || fx.cover) && !melee, fx.apMod || 0, fx.inv || 0), failP = sNeed > 6 ? 1 : (sNeed - 1) / 6;
   const unsaved = normal * failP;
-  let D_ = avgDice(w.d); if (k.melta && o.half) D_ += k.melta;
-  const fnpKeep = tg.fnp ? 1 - (7 - tg.fnp) / 6 : 1;
+  let D_ = avgDice(w.d) + (fx.dMod || 0); if (k.melta && o.half) D_ += k.melta; if (fx.dmgMinus) D_ = Math.max(1, D_ - fx.dmgMinus);
+  const fnp = [tg.fnp, fx.fnp].filter(Boolean), fnpN = fnp.length ? Math.min(...fnp) : 0;
+  const fnpKeep = fnpN ? 1 - (7 - fnpN) / 6 : 1;
   const dmg = (unsaved * Math.min(D_, tg.w) + devW * D_) * fnpKeep;
   const kills = Math.min(tg.models, ((unsaved * Math.min(D_, tg.w)) * fnpKeep + devW * D_ * fnpKeep) / tg.w);
-  return { A, hits, wounds, unsaved: unsaved + devW, dmg, kills, hitNeed: k.torrent ? 0 : Math.min(6, Math.max(2, (num(w.bs_ws) || 4) - (k.heavy && o.still && !melee ? 1 : 0))), wNeed, sNeed, critT, k };
+  return { A, hits, wounds, unsaved: unsaved + devW, dmg, kills, hitNeed, wNeed, sNeed, critT, k, fnpN, D_ };
 }
 function oddsLine(w, tg){
   const k = weaponKw(w), wn = woundNeed(num(w.s), tg.t), sv = saveNeed(w, tg, false);
@@ -2229,22 +2251,128 @@ function targetPicker(side){
   return `<div class="row" style="gap:6px;align-items:flex-end"><label class="f grow">Attacking which ${side === "me" ? "enemy" : "of your"} unit?<select data-ch="gtgt" data-side="${side}"><option value="">Choose a target…</option>${us.map(u => `<option value="${u.uid}"${cur === u.uid ? " selected" : ""}>${esc(D.ds[u.ds].name)}</option>`).join("")}</select></label>
     <button class="btn small" data-act="calcopen" data-side="${side}">Damage calculator</button></div>`;
 }
+/* ---- damage calculator: groups attached characters with their unit and reads abilities that change the maths ---- */
+function sideArmy(side){ const g = S.game || {}; return side === "me" ? S.lists.find(x => x.id === g.listId) : g.opp; }
+function sideGroups(side){
+  const us = sideUnits(side), byId = Object.fromEntries(us.map(u => [u.uid, u]));
+  const out = us.filter(u => !(u.lead && byId[u.lead])).map(u => { const leaders = us.filter(x => x.lead === u.uid); return { key:u.uid, body:u, members:[...leaders, u], label:[...leaders, u].map(x => D.ds[x.ds].name).join(" + ") }; });
+  return out;
+}
+function abilityTexts(side, grp){
+  const army = sideArmy(side), out = [], seen = new Set();
+  const armyKw = new Set(); sideUnits(side).forEach(u => (D.kwSet[u.ds] || new Set()).forEach(x => armyKw.add(x)));
+  const add = (src, name, text, type, member) => { const k = name + "|" + src; if (!text || seen.has(k)) return; seen.add(k); out.push({ src, name, text, type, member, armyKw }); };
+  grp.members.forEach(u => {
+    (D.abil[u.ds]||[]).forEach(a => { const g = a.ability_id && D.abilities[a.ability_id]; const nm = a.name || (g && g.name) || "", tx = plain(a.description || (g && g.description) || "");
+      if (/^(leader|deep strike|scouts|infiltrators|lone operative|deadly demise|firing deck)/i.test(nm) || /wargear/i.test(a.type || "")) return;
+      if (/faction/i.test(a.type || "")) add("Army rule", nm, tx, "army", null); else add(D.ds[u.ds].name, nm, tx, "unit", u);
+      if (/^stealth$/i.test(nm)) out[out.length - 1].stealth = true; });
+    const e = u.enh && D.enhById[u.enh]; if (e) add(D.ds[u.ds].name + " (enhancement)", e.name, plain(e.description || ""), "enh", u);
+  });
+  if (army && army.det) detRules(army.army, army.det).forEach(r => add("Detachment", r.name, plain(r.description || ""), "det", null));
+  return out;
+}
+/* Turn rules text into effects the maths understands. side "atk" keeps attacking effects, "def" keeps defensive ones. */
+function parseFx(ab, role, tgtKw){
+  const res = [];
+  const sentences = ab.text.replace(/\s+/g, " ").split(/(?<=[a-z0-9)\]][.:])\s*(?=[A-Z])/);
+  sentences.forEach((sen, i) => {
+    const l = lc(sen), fx = {};
+    const ni = sen.match(/does not include[^,]*? with the (.+?) keywords?/i);
+    if (ni && ab.armyKw && ni[1].split(/,\s*|\s+or\s+/).some(n => ab.armyKw.has(n.trim().toUpperCase()))) return;
+    let scope = /melee (attack|weapon)/.test(l) ? "melee" : /ranged (attack|weapon)/.test(l) ? "ranged" : "any";
+    const defensive = /(targets|allocated to) (this|that|a model in this|a model in that) (unit|model)|attack targets this|feel no pain|invulnerable save|benefit of cover/.test(l);
+    if (role === "atk" && !defensive) {
+      if (/re-roll (the|a) hit roll of 1/.test(l)) fx.rrHit = "1"; else if (/re-roll the hit roll/.test(l)) fx.rrHit = "all";
+      if (/re-roll (the|a) wound roll of 1/.test(l)) fx.rrWound = "1"; else if (/re-roll the wound roll/.test(l)) fx.rrWound = "all";
+      if (/add 1 to the hit roll/.test(l)) fx.hitMod = 1;
+      if (/add 1 to the wound roll/.test(l)) fx.woundMod = 1;
+      if (/\[lethal hits\]/.test(l)) fx.lethal = true;
+      const sh = l.match(/\[sustained hits (\d)\]/); if (sh) fx.sustained = +sh[1];
+      if (/\[devastating wounds\]/.test(l)) fx.dev = true;
+      if (/\[ignores cover\]/.test(l)) fx.ignoresCover = true;
+      if (/critical hit on a .{0,20}5\+/.test(l)) fx.crit5 = true;
+      const ap = l.match(/improve the armou?r penetration characteristic[^.]*? by (\d)/); if (ap) fx.apMod = +ap[1];
+      const sm = l.match(/add (\d) to the strength characteristic/); if (sm) fx.sMod = +sm[1];
+      const am = l.match(/add (\d) to the attacks characteristic/); if (am) fx.aMod = +am[1];
+      const dm = l.match(/add (\d) to the damage characteristic/); if (dm) fx.dMod = +dm[1];
+    }
+    if (role === "def") {
+      const fnp = l.match(/feel no pain (\d)\+/); if (fnp) fx.fnp = +fnp[1];
+      if (/subtract 1 from the hit roll/.test(l)) { fx.tgtHitMod = -1; }
+      if (/subtract 1 from the wound roll/.test(l)) { fx.tgtWoundMod = -1; if (/strength characteristic of that attack is greater than/.test(l)) fx.tgtWoundIfStronger = true; }
+      if (/subtract 1 from the damage characteristic/.test(l)) fx.dmgMinus = 1;
+      const iv = l.match(/(\d)\+ invulnerable save/); if (iv && /(models in|this model has|have a)/.test(l)) fx.inv = +iv[1];
+      if (/benefit of cover/.test(l) && /(has|have) the benefit of cover/.test(l)) fx.cover = true;
+      if (ab.stealth) { fx.tgtHitMod = -1; fx.tgtHitRanged = true; scope = "ranged"; }
+    }
+    if (!Object.keys(fx).length) return;
+    const leading = /while this model is leading a unit/.test(l) || /while this model is leading a unit/.test(lc(ab.text));
+    const lc2 = l.replace(/if the strength characteristic of that attack is greater than[^,.]*/, "");
+    const conditional = /once per (battle|turn|phase|battle round)|you can select|select one|at the start of|until the end of|if (this|that|your|it|the)|in a turn in which|oath of moment|within \d+"|within range of|below (its )?(starting strength|half-strength)|battle-shocked/.test(lc2) && !leading;
+    // keyword condition, e.g. "targets a MONSTER or VEHICLE unit"
+    const km = sen.match(/targets? (?:an? )?((?:[A-Z][A-Z\-]+)(?:(?: or |, )(?:[A-Z][A-Z\-]+))*) (?:unit|model)/);
+    let kwOk = null; if (km && role === "atk") { const want = km[1].split(/ or |, /); kwOk = want.some(x => tgtKw && [...tgtKw].some(y => y === x || y.includes(x))); if (!kwOk) return; }
+    const full = ab.text.replace(/\s+/g, " "), short = full.length > 170 ? full.slice(0, 167) + "…" : full;
+    const on = (ab.type !== "army" && ab.type !== "det" && !conditional) || kwOk === true;
+    res.push({ id: (ab.src + "|" + ab.name + "|" + scope + "|" + (on ? 1 : 0)).replace(/\W+/g, "_"), src: ab.src, name: ab.name, text: short, fx, scope, on, member: (leading || ab.type !== "unit") ? null : ab.member });
+  });
+  // one row per ability (and weapon type), even when several sentences add effects
+  const merged = [];
+  res.forEach(e => { const m = merged.find(x => x.id === e.id);
+    if (!m) merged.push(e); else { m.fx = mergeFx([m, e]); m.on = m.on && e.on; } });
+  return merged;
+}
+function mergeFx(list){ const fx = {}; list.forEach(e => Object.entries(e.fx).forEach(([k, v]) => {
+  if (k === "rrHit" || k === "rrWound") fx[k] = fx[k] === "all" || v === "all" ? "all" : "1";
+  else if (k === "fnp" || k === "inv") fx[k] = fx[k] ? Math.min(fx[k], v) : v;
+  else if (typeof v === "number") fx[k] = (k === "hitMod" || k === "woundMod" || k === "tgtHitMod" || k === "tgtWoundMod") ? v : Math.max(fx[k] || 0, v);
+  else fx[k] = fx[k] || v; })); return fx; }
+function groupWeapons(grp){
+  const out = [];
+  grp.members.forEach(u => { const st = unitWeapons(u), seen = new Set();
+    (D.wg[u.ds]||[]).filter(w => (!st || st.has(wStem(w.name))) && !seen.has(w.name) && seen.add(w.name)).forEach(w => out.push({ key: u.uid + "|" + w.name, w, u, melee: /melee/i.test(w.type || w.range || "") })); });
+  return out;
+}
 function calcHtml(){
-  const c = S.calc ||= {}, side = c.side || "me", other = side === "me" ? "opp" : "me";
-  const atk = sideUnits(side), defs = sideUnits(other);
+  const c = S.calc ||= {}, g = S.game || {}, side = c.side || "me", other = side === "me" ? "opp" : "me";
+  const atk = sideGroups(side), defs = sideGroups(other);
   if (!atk.length) return `<div class="small muted">Choose your list and import your opponent's list in the Game tab first.</div>`;
-  const au = atk.find(u => u.uid === c.unit) || atk[0]; c.unit = au.uid;
-  const st = unitWeapons(au), seen = new Set();
-  const wps = (D.wg[au.ds]||[]).filter(w => (!st || st.has(wStem(w.name))) && !seen.has(w.name) && seen.add(w.name));
-  const w = wps.find(x => x.name === c.weapon) || wps[0]; if (w) c.weapon = w.name;
-  const du = defs.find(u => u.uid === c.target) || defs[0]; if (du) c.target = du.uid;
-  const tg = du ? targetOf(other, du) : null;
-  if (c.firing == null || c.firingFor !== au.uid) { c.firing = unitModels(au); c.firingFor = au.uid; }
-  const sel = (k, opts, cur, label) => `<label class="f grow">${label}<select data-ch="calc" data-k="${k}">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
-  const chk = (k, label) => `<label class="check"><input type="checkbox" data-ch="calc" data-k="${k}"${c[k] ? " checked" : ""}><span>${label}</span></label>`;
+  const ag = atk.find(x => x.members.some(u => u.uid === c.unit)) || atk[0]; c.unit = ag.key;
+  const dg = defs.find(x => x.members.some(u => u.uid === c.target)) || defs[0]; if (dg) c.target = dg.key;
+  const tg = dg ? targetOf(other, dg.body) : null;
+  if (tg && dg.members.length > 1) tg.name = dg.label;
+  const wps = groupWeapons(ag);
+  // ability effects
+  c.abOn ||= {};
+  const atkFx = tg ? abilityTexts(side, ag).flatMap(a => parseFx(a, "atk", tg.kw)) : [];
+  const defFx = dg ? abilityTexts(other, dg).flatMap(a => parseFx(a, "def")) : [];
+  const isOn = e => c.abOn[e.id] !== undefined ? c.abOn[e.id] : e.on;
+  const fxFor = wp => mergeFx([...atkFx.filter(e => isOn(e) && (e.scope === "any" || (e.scope === "melee") === wp.melee) && (!e.member || e.member.uid === wp.u.uid)),
+                               ...defFx.filter(e => isOn(e) && (e.scope === "any" || (e.scope === "melee") === wp.melee))]);
+  const firingOf = wp => unitModels(wp.u);
+  // default weapon: the one doing the most damage to this target, ranged unless it's the Fight phase
+  const wantMelee = num(g.phase) === 4;
+  let wp = c.wPick && wps.find(x => x.key === c.weapon);
+  if (!wp && tg && wps.length) { const pool = wps.filter(x => x.melee === wantMelee).length ? wps.filter(x => x.melee === wantMelee) : wps;
+    wp = pool.map(x => [x, calcAttack(x.w, firingOf(x), tg, { fx: fxFor(x) }).dmg]).sort((a, b) => b[1] - a[1])[0][0]; c.auto = true; }
+  if (!wp) wp = wps[0];
+  if (wp) { c.weapon = wp.key; if (c.firingFor !== wp.key) { c.firing = firingOf(wp); c.firingFor = wp.key; } }
+  const w = wp && wp.w, k = w ? weaponKw(w) : {};
+  const sel = (key, opts, cur, label) => `<label class="f grow">${label}<select data-ch="calc" data-k="${key}">${opts}</select></label>`;
+  const opt = (v, t, cur) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`;
+  const chk = (key, label) => `<label class="check"><input type="checkbox" data-ch="calc" data-k="${key}"${c[key] ? " checked" : ""}><span>${label}</span></label>`;
+  // only the situational boxes this weapon cares about
+  const sit = w ? [ (k.melta || k.rapid) && !wp.melee ? chk("half", `Within half range <span class="muted small">(${[k.melta && "Melta", k.rapid && "Rapid Fire"].filter(Boolean).join(", ")})</span>`) : "",
+    k.heavy && !wp.melee ? chk("still", `Remained stationary <span class="muted small">(Heavy)</span>`) : "",
+    k.lance ? chk("charged", `Charged this turn <span class="muted small">(Lance)</span>`) : "",
+    !wp.melee && !k.ignoresCover ? chk("cover", "Target has cover") : "" ].filter(Boolean).join("") : "";
+  const wpFx = wp ? [...atkFx.filter(e => (e.scope === "any" || (e.scope === "melee") === wp.melee) && (!e.member || e.member.uid === wp.u.uid)), ...defFx.filter(e => e.scope === "any" || (e.scope === "melee") === wp.melee)] : [];
+  const abRow = e => `<label class="check abfx${defFx.includes(e) ? " abdef" : ""}"><input type="checkbox" data-ch="calcab" data-id="${esc(e.id)}"${isOn(e) ? " checked" : ""}><span><b>${esc(e.name)}</b> <span class="muted small">· ${esc(e.src)}</span><span class="abtx">${esc(e.text)}</span></span></label>`;
   let res = "";
-  if (w && tg) { const r = calcAttack(w, Math.max(1, num(c.firing)), tg, c);
+  if (w && tg) { const r = calcAttack(w, Math.max(1, num(c.firing)), tg, Object.assign({}, c, { fx: fxFor(wp) }));
     const f = x => x >= 10 ? x.toFixed(0) : x.toFixed(1);
+    const counted = [r.k.lethal && "Lethal Hits", r.k.sustained && "Sustained Hits", r.k.dev && "Devastating Wounds", r.k.torrent && "Torrent", r.k.twin && "Twin-linked", r.k.blast && "Blast", r.k.melta && "Melta", r.k.rapid && "Rapid Fire", r.k.lance && "Lance", r.k.heavy && "Heavy", r.k.anti.length && "Anti-"].filter(Boolean);
     res = `<div class="calcres">
       <div class="crow"><span>Attacks</span><b>${f(r.A)}</b></div>
       <div class="crow"><span>Hits ${r.hitNeed ? `(${r.hitNeed}+)` : "(auto)"}</span><b>${f(r.hits)}</b></div>
@@ -2252,15 +2380,18 @@ function calcHtml(){
       <div class="crow"><span>Failed saves ${r.sNeed > 6 ? "(no save)" : `(save ${r.sNeed}+)`}${r.k.dev ? " incl. Devastating" : ""}</span><b>${f(r.unsaved)}</b></div>
       <div class="crow big2"><span>Expected damage</span><b>${f(r.dmg)}</b></div>
       <div class="crow big2"><span>Models killed (≈)</span><b>${f(r.kills)} <small>of ${tg.models}</small></b></div>
-      <div class="small muted">Averages over many rolls, not a promise. ${[r.k.lethal && "Lethal Hits", r.k.sustained && "Sustained Hits", r.k.dev && "Devastating Wounds", r.k.torrent && "Torrent", r.k.twin && "Twin-linked", r.k.blast && "Blast", r.k.melta && "Melta", r.k.rapid && "Rapid Fire", r.k.lance && "Lance", r.k.heavy && "Heavy", r.k.anti.length && "Anti-"].filter(Boolean).join(", ") ? "Counted: " + [r.k.lethal && "Lethal Hits", r.k.sustained && "Sustained Hits", r.k.dev && "Devastating Wounds", r.k.torrent && "Torrent", r.k.twin && "Twin-linked", r.k.blast && "Blast", r.k.melta && "Melta", r.k.rapid && "Rapid Fire", r.k.lance && "Lance", r.k.heavy && "Heavy", r.k.anti.length && "Anti-"].filter(Boolean).join(", ") + "." : ""}${tg.fnp ? ` Target's Feel No Pain ${tg.fnp}+ included.` : ""}</div></div>`; }
-  return `<div class="seg" role="group" aria-label="Who is attacking"><button data-act="calcside" data-v="me" aria-pressed="${side==="me"}" class="pl-me-b">${esc((S.game.names||[])[0] || "Me")} attacks</button><button data-act="calcside" data-v="opp" aria-pressed="${side==="opp"}" class="pl-opp-b">${esc((S.game.names||[])[1] || "Opponent")} attacks</button></div>
-    <div class="row">${sel("unit", atk.map(u => [u.uid, D.ds[u.ds].name]), au.uid, "Attacking unit")}</div>
-    <div class="row">${sel("weapon", wps.map(x => [x.name, x.name + " (" + (/melee/i.test(x.type) ? "melee" : x.range + '"') + ")"]), w ? w.name : "", "Weapon")}<label class="f" style="width:96px">Models<input type="number" min="1" inputmode="numeric" data-ch="calc" data-k="firing" value="${esc(c.firing)}"></label></div>
-    ${w ? `<div class="small muted">A ${esc(w.a)} · ${/melee/i.test(w.type) ? "WS" : "BS"} ${esc(w.bs_ws)} · S ${esc(w.s)} · AP ${esc(w.ap)} · D ${esc(w.d)}${w.description ? " · " + esc(plain(w.description)) : ""}</div>` : ""}
-    <div class="row">${defs.length ? sel("target", defs.map(u => [u.uid, D.ds[u.ds].name]), du.uid, "Target") : `<div class="small muted">No units on the other side yet.</div>`}</div>
+      <div class="small muted">Averages over many rolls, not a promise.${counted.length ? " Counted: " + counted.join(", ") + "." : ""}${r.fnpN ? ` Feel No Pain ${r.fnpN}+ included.` : ""}${dg.members.length > 1 ? ` Wounds go to ${esc(D.ds[dg.body.ds].name)} first, so their stats are used.` : ""}</div></div>`; }
+  const wOpts = ag.members.length > 1 ? ag.members.map(u => `<optgroup label="${esc(D.ds[u.ds].name)}">${wps.filter(x => x.u === u).map(x => opt(x.key, x.w.name + " (" + (x.melee ? "melee" : x.w.range + '"') + ")", c.weapon)).join("")}</optgroup>`).join("")
+    : wps.map(x => opt(x.key, x.w.name + " (" + (x.melee ? "melee" : x.w.range + '"') + ")", c.weapon)).join("");
+  return `<div class="seg" role="group" aria-label="Who is attacking"><button data-act="calcside" data-v="me" aria-pressed="${side==="me"}" class="pl-me-b">${esc((g.names||[])[0] || "Me")} attacks</button><button data-act="calcside" data-v="opp" aria-pressed="${side==="opp"}" class="pl-opp-b">${esc((g.names||[])[1] || "Opponent")} attacks</button></div>
+    <div class="row">${sel("unit", atk.map(x => opt(x.key, x.label, ag.key)).join(""), ag.key, "Attacking unit")}</div>
+    <div class="row">${sel("weapon", wOpts, c.weapon, `Weapon${c.auto && !c.wPick ? ` <span class="autotag">auto: most damage</span>` : ""}`)}<label class="f" style="width:96px">Models<input type="number" min="1" inputmode="numeric" data-ch="calc" data-k="firing" value="${esc(c.firing)}"></label></div>
+    ${w ? `<div class="small muted">${ag.members.length > 1 ? `<b>${esc(D.ds[wp.u.ds].name)}</b> · ` : ""}A ${esc(w.a)} · ${wp.melee ? "WS" : "BS"} ${esc(w.bs_ws)} · S ${esc(w.s)} · AP ${esc(w.ap)} · D ${esc(w.d)}${w.description ? " · " + esc(plain(w.description)) : ""}</div>` : ""}
+    <div class="row">${defs.length ? sel("target", defs.map(x => opt(x.key, x.label, dg.key)).join(""), dg.key, "Target") : `<div class="small muted">No units on the other side yet.</div>`}</div>
     ${tg ? `<div class="small muted">T ${tg.t} · Sv ${tg.sv}+${tg.inv ? ` · ${tg.inv}++ invuln` : ""} · W ${tg.w} · ${tg.models} model${tg.models === 1 ? "" : "s"}${tg.fnp ? ` · FNP ${tg.fnp}+` : ""}</div>` : ""}
-    <div class="calcopts">${chk("half", "Within half range (Melta, Rapid Fire)")}${chk("still", "Remained stationary (Heavy)")}${chk("charged", "Charged this turn (Lance)")}${chk("cover", "Target has cover")}</div>
-    <div class="row">${sel("rrHit", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]], c.rrHit || "", "Hit re-rolls")}${sel("rrWound", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]], c.rrWound || "", "Wound re-rolls")}</div>
+    ${sit ? `<div class="calcopts">${sit}</div>` : ""}
+    ${wpFx.length ? `<details class="dsub abfxbox" open><summary>Abilities in play · ${wpFx.filter(isOn).length} of ${wpFx.length} on</summary><div class="small muted" style="margin:4px 0 6px">Found on these units' rules. Ticked ones are counted; untick any that don't apply right now.</div>${wpFx.map(abRow).join("")}</details>` : ""}
+    <div class="row">${sel("rrHit", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]].map(([v,t]) => opt(v,t,c.rrHit||"")).join(""), "", "Extra hit re-rolls")}${sel("rrWound", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]].map(([v,t]) => opt(v,t,c.rrWound||"")).join(""), "", "Extra wound re-rolls")}</div>
     ${res}`;
 }
 function openCalc(){ openSheet("calc", "Damage calculator", calcHtml()); }
@@ -2814,6 +2945,7 @@ document.addEventListener("click", e => {
       if (S.confirmDel !== l.id) { S.confirmDel = l.id; render(); break; }
       S.lists = S.lists.filter(x => x.id !== l.id); LS.set("lists", S.lists); if (Cloud.ready) Cloud.del("list-"+l.id).catch(()=>{});
       S.cur = null; LS.set("cur", null); S.confirmDel = null; S.view = "lists"; render(); toast("List deleted"); break;
+    case "busedreset": { const l = curList(); if (l) { S.used ||= LS.get("used", {}); S.used[l.id] = {}; LS.set("used", S.used); render(); } break; }
     case "rtab": S.rulesTab = t.dataset.v; render(); break;
     case "import": $("#fileIn").click(); break;
     case "rule": showRule(t.dataset.k); break;
@@ -2899,8 +3031,8 @@ document.addEventListener("click", e => {
       if (c.m === start && c.w === W) delete g.track[k]; else g.track[k] = c;
       saveGame(); render(); break;
     }
-    case "calcopen": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.side }); const g = S.game || {}; const tg = t.dataset.side === "me" ? g.tgt : g.tgtOpp; if (tg) S.calc.target = tg; openCalc(); break; }
-    case "calcside": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.v, unit:null, weapon:null, target:null, firing:null }); openCalc(); break; }
+    case "calcopen": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.side, wPick:false, weapon:null }); const g = S.game || {}; const tg = t.dataset.side === "me" ? g.tgt : g.tgtOpp; if (tg) S.calc.target = tg; openCalc(); break; }
+    case "calcside": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.v, unit:null, weapon:null, target:null, firing:null, firingFor:null, wPick:false }); openCalc(); break; }
     case "grole": { const g = fixGame(S.game ||= blankGame()); g.role = t.dataset.v;
       if (g.role) { if (g.round === 1 && g.phase === 0) { g.turn = g.role === "att" ? "me" : "opp"; g.firstTurn = g.turn;
         /* the game starts in the first Command phase, where both players gain 1CP (only once) */
@@ -2963,7 +3095,12 @@ document.addEventListener("change", e => {
     const v = k === "uwg" ? +t.value : (t.checked ? 1 : 0);
     if (v) u.wg[t.dataset.line] = v; else delete u.wg[t.dataset.line];
   }
-  else if (k === "calc") { const c = S.calc ||= {}; c[t.dataset.k] = t.type === "checkbox" ? t.checked : t.value; if (t.dataset.k === "unit") { c.weapon = null; c.firing = null; } openCalc(); return; }
+  else if (k === "calc") { const c = S.calc ||= {}; c[t.dataset.k] = t.type === "checkbox" ? t.checked : t.value;
+    if (t.dataset.k === "unit") { c.weapon = null; c.wPick = false; c.firingFor = null; }
+    if (t.dataset.k === "weapon") { c.wPick = true; c.firingFor = null; }
+    if (t.dataset.k === "target" && !c.wPick) c.weapon = null;
+    openCalc(); return; }
+  else if (k === "calcab") { const c = S.calc ||= {}; (c.abOn ||= {})[t.dataset.id] = t.checked; openCalc(); return; }
   else if (k === "gtgt") { const g = fixGame(S.game ||= blankGame()); if (t.dataset.side === "me") g.tgt = t.value; else g.tgtOpp = t.value; saveGame(); render(); return; }
   else if (k === "gpick") {
     const g = fixGame(S.game ||= blankGame()), ps = g.ps[+t.dataset.p], n = t.value; if (!n) return;
@@ -2984,6 +3121,7 @@ document.addEventListener("change", e => {
     saveGame(); render(); return;
   }
   else if (k === "newarmy") { S.newArmy = t.value; LS.set("newArmy", t.value); render(); return; }
+  else if (k === "bused") { const l = curList(); if (!l) return; S.used ||= LS.get("used", {}); (S.used[l.id] ||= {})[t.dataset.k] = t.checked; LS.set("used", S.used); t.closest(".bonce").classList.toggle("used", t.checked); return; }
   else if (k === "rmine") { S.rulesMine = t.checked; LS.set("rulesMine", t.checked); render(); return; }
   else if (k === "rarmy") { S.rulesArmy = t.value; LS.set("rulesArmy", t.value); render(); return; }
   else if (k === "look") { S.settings[t.dataset.k] = t.checked; LS.set("settings", S.settings); applyMode(); render(); return; }
@@ -3321,6 +3459,58 @@ const PHASE_RX = {
   Charge: /charge phase|charge roll|declares? a charge|charge move/i,
   Fight: /fight phase|melee attack|melee weapon|fights first|pile.in|consolidat/i
 };
+/* ---- Briefing: studies the open list for things to measure, remember and track ---- */
+function briefingHtml(l){
+  const units = l.units.filter(u => D.ds[u.ds]), byId = Object.fromEntries(units.map(u => [u.uid, u]));
+  const abOf = u => (D.abil[u.ds]||[]).map(a => { const g = a.ability_id && D.abilities[a.ability_id]; return { name: a.name || (g && g.name) || "", text: plain(a.description || (g && g.description) || ""), type: a.type || "", param: a.parameter || "" }; });
+  const label = u => esc(unitLabel(l, u));
+  const inch = x => { const n = num(String(x).replace(/[^\d.]/g, "")); return n; };
+  const fold = (key, title, sub, inner) => `<details class="card foldcard brief"${keepOpen("br-" + key)}><summary><h3>${title}</h3><span class="muted small">${sub}</span></summary><div class="stack" style="margin-top:10px;gap:8px">${inner}</div></details>`;
+  // 1. pre-measure
+  let longest = 0;
+  const rows = units.map(u => {
+    const m0 = (D.models[u.ds]||[])[0] || {}, mv = inch(m0.m);
+    const wps = groupWeapons({ members:[u] }), rng = [];
+    wps.filter(x => !x.melee).forEach(x => { const r = inch(x.w.range), k = weaponKw(x.w); if (!r) return; longest = Math.max(longest, r);
+      rng.push(`<span class="rng"><b>${r}"</b> ${esc(x.w.name)}${k.melta || k.rapid ? ` <span class="half">½ ${r/2}" ${k.melta ? "Melta" : "Rapid Fire"}</span>` : ""}</span>`); });
+    const dist = []; abOf(u).forEach(a => { if (/^(leader|deep strike|deadly demise)$/i.test(a.name) || /faction/i.test(a.type)) return;
+      const ds = [...new Set([...(a.text.match(/\d+(?=")/g) || []), ...(/scouts|deadly demise/i.test(a.name) && a.param ? a.param.match(/\d+/g) || [] : [])])];
+      if (ds.length) dist.push(`<span class="rng"><b>${ds.map(d => d + '"').join(", ")}</b> ${esc(a.name)}</span>`); });
+    const e = u.enh && D.enhById[u.enh]; if (e) { const ds = plain(e.description || "").match(/\d+(?=")/g); if (ds) dist.push(`<span class="rng"><b>${[...new Set(ds)].map(d => d + '"').join(", ")}</b> ${esc(e.name)}</span>`); }
+    const lead = u.lead && byId[u.lead] ? ` <span class="muted small">→ leading ${label(byId[u.lead])}</span>` : "";
+    return `<details class="srow brow"><summary><span class="sname">${label(u)}${lead}</span><span></span><span class="tags"><span class="abwho">M ${mv ? mv + '"' : "–"}${mv ? ` · charge ≈${mv + 7}"` : ""}</span></span></summary>
+      <div class="bgrid">${rng.length ? `<div><div class="bh">Guns</div>${rng.join("")}</div>` : ""}${dist.length ? `<div><div class="bh">Ability ranges</div>${dist.join("")}</div>` : ""}${!rng.length && !dist.length ? `<div class="small muted">Melee only, no ranges to measure. Charge reach is Move + 2D6 (7" on average, 12" at most).</div>` : ""}</div></details>`;
+  }).join("");
+  const measure = fold("measure", "📏 Pre-measure", `Longest gun ${longest}" · tap a unit`, `<div class="small muted">Move, guns and any distances written in a unit's abilities. Charge reach is Move plus the 7" average charge roll.</div>${rows}`);
+  // 2. before the game
+  const pre = [];
+  const hasAb = (u, rx) => abOf(u).find(a => rx.test(a.name));
+  units.forEach(u => {
+    const ds = hasAb(u, /^deep strike$/i), sc = hasAb(u, /^scouts/i), inf = hasAb(u, /^infiltrators$/i), lo = hasAb(u, /^lone operative$/i), st = hasAb(u, /^stealth$/i), ff = hasAb(u, /^fights first$/i);
+    const tags = [ds && "Deep Strike: arrives 9\" from enemies", sc && `Scouts ${esc((sc.param || sc.name.replace(/\D+/g, "")) || "")}"`.replace(/ "$/, ""), inf && "Infiltrators: deploy 9\" from enemies", lo && "Lone Operative", st && "Stealth (−1 to be hit at range)", ff && "Fights First"].filter(Boolean);
+    if (u.lead && byId[u.lead]) tags.push(`Attach to ${label(byId[u.lead])} when declaring battle formations`);
+    const e = u.enh && D.enhById[u.enh]; if (e) tags.push(`Enhancement: ${esc(e.name)}`);
+    if (u.warlord) tags.push("Warlord");
+    if (tags.length) pre.push(`<div class="brow2"><b>${label(u)}</b><div class="small">${tags.map(t => `<span class="pill">${t}</span>`).join(" ")}</div></div>`);
+  });
+  const before = fold("pre", "🚀 Before the game", `${pre.length} unit${pre.length === 1 ? "" : "s"} with deployment notes`, pre.join("") || `<div class="small muted">Nothing special to set up. Everything deploys normally.</div>`);
+  // 3. phase reminders
+  const ph = PHASES.map(p => { const ab = abilitiesNow(l, p); return `<details class="dsub"><summary>${p} · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">Nothing extra this phase.</div>`}</details>`; }).join("");
+  const phases = fold("phase", "⏱️ Phase reminders", "What your army does in each phase", ph);
+  // 4. once per battle / limited uses
+  const used = (S.used ||= LS.get("used", {}))[l.id] || {}, once = [], seenO = new Set();
+  const addOnce = (name, who, text) => { const m = text.match(/once per (battle round|battle|turn|phase)/i); if (!m) return; const k = (name + "|" + who).replace(/\W+/g, "_"); if (seenO.has(k)) return; seenO.add(k);
+    once.push(`<label class="check bonce${used[k] ? " used" : ""}"><input type="checkbox" data-ch="bused" data-k="${k}"${used[k] ? " checked" : ""}><span><b>${esc(name)}</b> <span class="muted small">· ${esc(who)} · once per ${esc(m[1].toLowerCase())}</span></span></label>`); };
+  units.forEach(u => { abOf(u).forEach(a => { if (!/faction/i.test(a.type)) addOnce(a.name, D.ds[u.ds].name, a.text); }); const e = u.enh && D.enhById[u.enh]; if (e) addOnce(e.name, unitLabel(l, u), plain(e.description || "")); });
+  if (l.det) detRules(l.army, l.det).forEach(r => addOnce(r.name, "Detachment", plain(r.description || "")));
+  const onceBox = fold("once", "☝️ Limited uses", `${once.length} to track · tick when used`, once.length ? once.join("") + `<button class="btn small" data-act="busedreset">Reset for a new game</button>` : `<div class="small muted">No once-per-battle abilities in this list.</div>`);
+  // 5. weapon rules worth remembering
+  const KW = [["hazardous","Hazardous","roll a D6 per weapon after attacking; on a 1 a model is destroyed (or takes 3 mortal wounds)"],["precision","Precision","can pick out an attached Character"],["indirect fire","Indirect Fire","can shoot without line of sight (−1 to hit, target gets cover)"],["one shot","One Shot","fires once per battle"],["pistol","Pistol","can shoot while in Engagement Range"],["assault","Assault","can shoot after Advancing"],["lance","Lance","+1 to wound on the charge"],["melta","Melta","extra damage at half range"],["blast","Blast","+1 attack per 5 models in the target; not into Engagement Range"],["extra attacks","Extra Attacks","used on top of another melee weapon"],["psychic","Psychic","psychic attack"],["lethal hits","Lethal Hits","6s to hit auto-wound"],["sustained hits","Sustained Hits","6s to hit score extra hits"],["devastating wounds","Devastating Wounds","6s to wound skip saves"],["anti-","Anti-","critical wounds on a lower roll against a keyword"]];
+  const kwRows = KW.map(([rx, name, tip]) => { const who = [...new Set(units.filter(u => groupWeapons({ members:[u] }).some(x => lc(plain(x.w.description || "")).includes(rx))).map(u => unitLabel(l, u)))];
+    return who.length ? `<div class="brow2"><b>${name}</b> <span class="muted small">${tip}</span><div class="small">${who.map(esc).join(" · ")}</div></div>` : ""; }).join("");
+  const weaponsBox = fold("wkw", "⚔️ Weapon rules to remember", "Which units carry which special rules", kwRows || `<div class="small muted">No special weapon rules in this list.</div>`);
+  return `<div class="small muted">A study of <b>${esc(l.name)}</b> with the wargear you picked.</div>${measure}${before}${onceBox}${phases}${weaponsBox}`;
+}
 function abilitiesNow(l, phase){
   const rx = PHASE_RX[phase], out = [], seen = new Set();
   const add = (name, who, html) => { const t = plain(html); if (!name || !t || !rx.test(t)) return; const k = name + "|" + who; if (seen.has(k)) return; seen.add(k); out.push({ name, who, html }); };
