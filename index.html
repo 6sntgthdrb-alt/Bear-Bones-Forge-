@@ -606,6 +606,49 @@ body:has(.turnbar) .toast{bottom:calc(150px + env(safe-area-inset-bottom))}
 .crow small{font-size:.75rem;color:var(--muted)}
 .calcopts{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
 @media (max-width:380px){.calcopts{grid-template-columns:1fr}}
+
+/* Game tab: more breathing room on phones */
+.gamev{gap:18px}
+.gamev .card{padding:16px}
+.gamev .stack{gap:14px}
+.gamev > .row{gap:12px;align-items:stretch}
+.gamev .battle-missions{gap:14px;margin-top:4px}
+.gamev .battle{gap:16px}
+.gamev .gds + .card,.gamev .card + .card{margin-top:0}
+.gamev > .btn,.gamev > label.f{width:100%}
+.gamev .btn{min-height:46px}
+.gamev .btn.small{min-height:38px}
+.gamev .mcard{padding:2px 14px}
+.gamev .mcard summary{padding:12px 0}
+.gamev details.card > summary{padding:2px 0}
+.gamev .srow{padding:8px 0 8px 12px;margin:6px 0}
+.gamev .trkbox{padding:10px 12px}
+@media (max-width:420px){.gamev{gap:16px}.gamev > .row > .card{flex-basis:100%}}
+
+.sbox .sv{overflow:hidden !important;text-overflow:clip !important;white-space:nowrap;max-width:100%;letter-spacing:-.01em}
+.sbox{padding-left:2px !important;padding-right:2px !important}
+
+/* Game header: versus banner */
+header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
+.vsban{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:stretch;gap:0;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px var(--shade)}
+.vs-side{position:relative;display:flex;align-items:center;gap:6px;padding:8px;min-height:68px;color:#fff;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 85%,transparent),color-mix(in srgb,var(--accent) 35%,transparent)),var(--scene,none) center/cover,var(--accent)}
+.vs-side.custom{background:linear-gradient(90deg,rgba(0,0,0,.55),rgba(0,0,0,.2)),var(--scene) center/cover,var(--accent)}
+.vs-opp{flex-direction:row-reverse;text-align:right}
+.vs-opp.custom,.vs-opp:not(.custom){background-position:center}
+.vs-opp:not(.custom):not(.vs-empty){background:linear-gradient(270deg,color-mix(in srgb,var(--accent) 85%,transparent),color-mix(in srgb,var(--accent) 35%,transparent)),var(--scene,none) center/cover,var(--accent)}
+.vs-opp.custom{background:linear-gradient(270deg,rgba(0,0,0,.55),rgba(0,0,0,.2)),var(--scene) center/cover,var(--accent)}
+.vs-me{box-shadow:inset 0 -3px 0 var(--pl-me)}.vs-opp{box-shadow:inset 0 -3px 0 var(--pl-opp)}
+.vs-empty{background:var(--panel2);color:var(--muted)}
+.vs-emb{flex:none;width:38px;height:38px;display:grid;place-items:center;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.vs-emb svg,.vs-emb .cicon{width:38px;height:38px}
+.vs-q{border-radius:50%;border:2px dashed currentColor;font:700 1.2rem var(--body);width:38px;height:38px}
+.vs-txt{min-width:0;display:flex;flex-direction:column;line-height:1.15}
+.vs-txt b{font-family:var(--army-title,var(--display));font-size:.95rem;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-shadow:0 1px 3px rgba(0,0,0,.6);color:inherit !important}
+.vs-txt span{font-size:.72rem;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vs-mid{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 8px;background:#0d0d0f;color:#fff;gap:2px}
+.vs-mid b{font:900 1.05rem var(--display);letter-spacing:.06em}
+.vs-mid span{font-size:.7rem;opacity:.8}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -1583,6 +1626,18 @@ const SVG = {
   trash:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
   x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>'
 };
+
+/* Shrink any stat number that doesn't fit its box (works the same in every browser) */
+function fitStats(root){
+  (root || document).querySelectorAll(".sbox .sv").forEach(el => {
+    if (!el.offsetParent) return;
+    el.style.removeProperty("font-size");
+    let fs = parseFloat(getComputedStyle(el).fontSize), n = 0;
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 9 && n++ < 18) { fs -= 1; el.style.setProperty("font-size", fs + "px", "important"); }
+  });
+}
+document.addEventListener("toggle", e => { if (e.target.open) fitStats(e.target); }, true);
+window.addEventListener("resize", () => { clearTimeout(window._fitT); window._fitT = setTimeout(() => fitStats(), 150); });
 function render(){
   const l = curList();
   const gl = S.view === "game" && S.game && S.game.listId && S.lists.find(x => x.id === S.game.listId);
@@ -1593,6 +1648,7 @@ function render(){
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
   window.scrollTo(0, st);
+  fitStats(m);
 }
 function renderTop(){
   const l = curList(); const top = $("#top");
@@ -1602,7 +1658,21 @@ function renderTop(){
     bar = `<div class="pbar${v.total > l.points ? " over":""}"><i style="width:${pct}%"></i></div>
       <div class="pline num"><span>${esc(l.name)}</span><span><b style="color:var(--text)">${v.total}</b> / ${l.points} pts</span></div>`;
   }
+  if (S.view === "game" && D) { top.innerHTML = vsBannerHtml(); top.classList.add("vstop"); return; }
+  top.classList.remove("vstop");
   top.innerHTML = `<div class="brand"><div class="mark" aria-hidden="true">BB</div><h1>Bear Bones Forge</h1><span class="sync" id="syncnote">${esc(S.syncNote)}</span></div>${bar}`;
+}
+/* Game tab header: your army's banner vs your opponent's, with both army icons */
+function vsBannerHtml(){
+  const g = S.game || {}, ml = S.lists.find(x => x.id === g.listId), o = g.opp;
+  const side = (army, name, sub, cls) => army
+    ? `<div class="vs-side ${cls}${hasArt(army) ? " custom" : ""}" style="--accent:${accentOf(army)};--scene:url(${sceneImage(army)})"><span class="vs-emb">${emblem(army)}</span><div class="vs-txt"><b>${esc(name)}</b><span>${esc(sub)}</span></div></div>`
+    : `<div class="vs-side ${cls} vs-empty"><span class="vs-emb vs-q">?</span><div class="vs-txt"><b>${esc(name)}</b><span>${esc(sub)}</span></div></div>`;
+  return `<div class="vsban">
+    ${side(ml && ml.army, ml ? ml.name : "Your army", ml ? armyName(ml.army, ml) : "Choose your list", "vs-me")}
+    <div class="vs-mid"><b>VS</b>${g.role ? `<span>R${g.round}</span>` : ""}</div>
+    ${side(o && o.army, o ? o.name : "Opponent", o ? armyName(o.army, o) : "Import their list", "vs-opp")}
+  </div>`;
 }
 function needData(){
   return `<div class="empty"><h2>Load the Wahapedia data first</h2><p>The app needs Wahapedia's data files for datasheets, points and rules.</p><button class="btn primary" data-act="nav" data-v="data">Go to Settings</button></div>`;
@@ -1763,8 +1833,13 @@ function detBox(army, d, l, compact){
 }
 function keepAttr(k){ return k ? ` data-keep="${esc(k)}"${S.keep[k] ? " open" : ""}` : ""; }
 function listDsHtml(l, keyPfx = ""){
-  return ROLE_ORDER.map(g => {
-        const us = l.units.filter(u => (D.ds[u.ds] ? roleOf(u.ds) : "Other units") === g); if (!us.length) return "";
+  /* Characters first: every character, and every unit that has a character attached, grouped together at the top */
+  const hasLeader = u => l.units.some(x => x.lead === u.uid && D.ds[x.ds]);
+  const isChar = u => D.ds[u.ds] && /^(Epic Heroes|Characters)$/.test(roleOf(u.ds));
+  const grpOf = u => !D.ds[u.ds] ? "Other units" : (hasLeader(u) || isChar(u)) ? "Characters" : roleOf(u.ds);
+  const order = ["Characters", ...ROLE_ORDER.filter(g => g !== "Epic Heroes" && g !== "Characters")];
+  return order.map(g => {
+        const us = l.units.filter(u => grpOf(u) === g).sort((x, y) => g === "Characters" ? (hasLeader(y) - hasLeader(x)) : 0); if (!us.length) return "";
         const cards = us.map(u => {
           if (!D.ds[u.ds]) return "";
           const tgt = u.lead && l.units.find(x => x.uid === u.lead);
@@ -2276,7 +2351,7 @@ function viewGame(){
       <div class="small muted">Load your missions file on the <a href="#" data-act="nav" data-v="data">Settings</a> tab to pick missions, see the maps and draw secondaries.</div>
     </div>`;
   }
-  return `<div class="stack">
+  return `<div class="stack gamev">
     <div class="card"><div class="sec-h">Battle round</div>
       <div class="stepper"><button data-act="ground" data-d="-1" aria-label="Previous round">−</button><span class="big num">${g.round}</span><button data-act="ground" data-d="1" aria-label="Next round">+</button></div></div>
     ${battleHtml(g, setup)}
@@ -2416,6 +2491,7 @@ function openSheet(kind, title, html){
   const host = $("#sheets");
   let el = host.querySelector(`[data-kind="${kind}"]`);
   if (!el) { el = document.createElement("div"); el.className = "sheet-bg"; el.dataset.kind = kind; host.appendChild(el); }
+  requestAnimationFrame(() => fitStats(el));
   el.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sheet-h"><h2>${esc(title)}</h2><button class="iconbtn" data-act="close" data-kind="${kind}" aria-label="Close">${SVG.x}</button></div><div class="sheet-c">${html}</div></div>`;
   return el;
 }
@@ -2921,7 +2997,7 @@ async function loadSiteData(force){
   if (window.claude || !/^https?:$/.test(location.protocol)) return false;
   try {
     let url = null, tag = "";
-    for (const u of ["data/everything.json.gz", "data/everything.json", "data/Everything.json"]) {
+    for (const u of ["data/everything.json.gz", "everything.json.gz", "data/everything.json", "everything.json", "data/Everything.json", "Everything.json"]) {
       const h = await fetch(u, { method:"HEAD", cache:"no-store" }).catch(() => null);
       if (h && h.ok) { url = u; tag = u + "|" + (h.headers.get("etag") || h.headers.get("last-modified") || h.headers.get("content-length") || ""); break; }
     }
