@@ -699,6 +699,11 @@ header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
 }
 .chk{display:flex;gap:8px;align-items:flex-start;font-size:.92rem;cursor:pointer}.chk input{width:18px;height:18px;margin-top:2px;flex:none;accent-color:var(--acc,currentColor)}
 .gamev .btn.tableset{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:64px!important;font-size:1.05rem;width:100%}.btn.tableset b,.btn.tableset span{color:inherit!important;background:none}.btn.tableset .small{opacity:.85;font-weight:400;font-size:.78rem}
+.deadtag{margin-left:auto;flex:none;align-self:center;font:800 .95rem var(--display);letter-spacing:.08em;text-transform:uppercase;color:#fff;background:#7a1414;border:2px solid #e04a3a;padding:6px 12px;border-radius:6px;transform:rotate(-3deg);box-shadow:0 2px 10px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.35);position:relative;z-index:2;white-space:nowrap}
+.mcard.unit-dead{border-color:#5a1c1c!important;box-shadow:none}
+.mcard.unit-dead > summary{position:relative;background:repeating-linear-gradient(135deg,rgba(0,0,0,.28) 0 8px,rgba(0,0,0,.12) 8px 16px)}
+.mcard.unit-dead > summary > :not(.deadtag){filter:grayscale(1);opacity:.4}
+.mcard.unit-dead > summary b{text-decoration:line-through;text-decoration-thickness:2px}
 </style>
 </head>
 <body data-army="">
@@ -1902,10 +1907,10 @@ function listDsHtml(l, keyPfx = ""){
           const title = leaders.length ? `${leaders.map(x => esc(unitLabel(l,x))).join(" + ")} + ${esc(unitLabel(l,u))}` : esc(unitLabel(l,u));
           if (leaders.length) {
             const one = (x, role) => { const rr = costRows(x.ds), r2 = rr.find(y => y.line === x.line) || rr[0];
-              return `<details class="mcard"${keyPfx ? keepAttr(keyPfx + x.uid) : ""}><summary><span class="kind">${role}</span><b>${esc(unitLabel(l,x))}</b><span class="muted small">${r2 ? esc(plain(r2.label)) + " · " : ""}${unitCost(x)+enhCost(x)} pts${x.warlord ? " · Warlord" : ""}</span>${keyPfx ? trackChip("me", x) : ""}</summary><div class="stack" style="padding-bottom:6px">${part(x, "")}</div></details>`; };
+              return `<details class="mcard${keyPfx && isDead("me", x) ? " unit-dead" : ""}"${keyPfx ? keepAttr(keyPfx + x.uid) : ""}><summary><span class="kind">${role}</span><b>${esc(unitLabel(l,x))}</b><span class="muted small">${r2 ? esc(plain(r2.label)) + " · " : ""}${unitCost(x)+enhCost(x)} pts${x.warlord ? " · Warlord" : ""}</span>${keyPfx ? trackChip("me", x) : ""}</summary><div class="stack" style="padding-bottom:6px">${part(x, "")}</div></details>`; };
             return `<div class="attbox"><div class="attbox-h"><span class="kind">Attached unit</span><b>${title}</b><span class="muted small">${total} pts together</span></div>${leaders.map(x => one(x, "Leader")).join("")}${one(u, "Bodyguard")}</div>`;
           }
-          return `<details class="mcard${leaders.length ? " attached" : ""}"${keyPfx ? keepAttr(keyPfx + u.uid) : ""}><summary>${leaders.length ? `<span class="kind">Attached unit</span>` : ""}<b>${title}</b><span class="muted small">${leaders.length ? "" : (r ? esc(plain(r.label)) + " · " : "")}${total} pts${!leaders.length && u.warlord ? " · Warlord" : ""}</span>${keyPfx ? [...leaders, u].map(x => trackChip("me", x)).join("") : ""}</summary>
+          return `<details class="mcard${leaders.length ? " attached" : ""}${keyPfx && [...leaders, u].every(x => isDead("me", x)) ? " unit-dead" : ""}"${keyPfx ? keepAttr(keyPfx + u.uid) : ""}><summary>${leaders.length ? `<span class="kind">Attached unit</span>` : ""}<b>${title}</b><span class="muted small">${leaders.length ? "" : (r ? esc(plain(r.label)) + " · " : "")}${total} pts${!leaders.length && u.warlord ? " · Warlord" : ""}</span>${keyPfx ? ([...leaders, u].every(x => isDead("me", x)) ? DEADTAG : [...leaders, u].map(x => trackChip("me", x)).join("")) : ""}</summary>
             <div class="stack" style="padding-bottom:6px">${leaders.length ? leaders.map(x => part(x, "Leader")).join("") + part(u, "Bodyguard") : part(u, "")}</div></details>`;
         }).join("");
         if (!cards) return "";
@@ -2122,10 +2127,12 @@ function trackInfo(side, u){
   const half = !dead && (start > 1 ? m < start / 2 : w < W / 2);
   return { key, start, W, m, w, dead, half };
 }
+function isDead(side, u){ return !!(S.game && S.game.track && S.game.track[side + ":" + u.uid] && trackInfo(side, u).dead); }
+const DEADTAG = `<span class="deadtag">☠ Destroyed</span>`;
 function trackChip(side, u){
   if (!S.game || !S.game.track || !S.game.track[side + ":" + u.uid]) return "";
   const t = trackInfo(side, u);
-  if (t.dead) return `<span class="pill err">Destroyed</span>`;
+  if (t.dead) return DEADTAG;
   const txt = t.start > 1 ? `${t.m}/${t.start} models` : `${t.w}/${t.W} W`;
   return `<span class="pill${t.half ? " warn" : ""}">${txt}</span>`;
 }
@@ -2264,7 +2271,7 @@ function oppHtml(g){
     <label class="f" for="g-oppname-in">Army name<input type="text" id="g-oppname-in" data-in="goppname" value="${esc(o.name)}"></label>
     <div class="small muted">${esc(armyName(o.army, o))}${o.det ? " · " + esc(o.det.name) : ""}</div>${targetPicker("opp")}${armyRulesHtml(o, "g-opprules")}
     ${o.units.filter(u => D.ds[u.ds]).map(u => { const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; const e = u.enh && D.enhById[u.enh];
-      return `<details class="mcard"${keepAttr("go-" + u.uid)}><summary><b>${esc(unitLabel(o,u))}</b><span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(u)+enhCost(u)} pts${u.warlord ? " · Warlord" : ""}</span>${trackChip("opp", u)}</summary><div class="stack" style="padding-bottom:6px">${trackHtml("opp", u)}
+      return `<details class="mcard${isDead("opp", u) ? " unit-dead" : ""}"${keepAttr("go-" + u.uid)}><summary><b>${esc(unitLabel(o,u))}</b><span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(u)+enhCost(u)} pts${u.warlord ? " · Warlord" : ""}</span>${trackChip("opp", u)}</summary><div class="stack" style="padding-bottom:6px">${trackHtml("opp", u)}
         ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
         ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true, vs: targetFor("opp") })}</div></details>`; }).join("")}
     <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div></details>`;
@@ -2437,7 +2444,6 @@ function viewGame(){
   if (!g.role && !g.tableSet) return `<div class="stack gamev">
     <div class="card stack"><div class="gds-h">3 · Prepare the battlefield</div>
       <div class="small muted">Choose the mission and lay out the terrain. When the table is ready, you'll decide who attacks and who defends.</div>
-      <label class="f" for="glist">Your army<select id="glist" data-ch="glist"><option value="">Choose a list…</option>${S.lists.map(x => `<option value="${x.id}"${g.listId===x.id?" selected":""}>${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select></label>
       <label class="f" for="gopp">Opponent's army<div class="row" style="gap:8px;flex-wrap:nowrap"><select id="gopp" class="grow" data-ch="opppick"><option value="">${g.opp ? esc(g.opp.name) + " (" + esc(armyName(g.opp.army, g.opp)) + ")" : "No list, playing without it"}</option>${S.lists.filter(x => x.id !== g.listId).map(x => `<option value="${x.id}">${esc(x.name)} (${esc(armyName(x.army, x))})</option>`).join("")}</select><button class="btn small" data-act="oppimport" style="flex:none">Import</button></div></label></div>
     ${setup}
     ${terrainHtml(g)}
