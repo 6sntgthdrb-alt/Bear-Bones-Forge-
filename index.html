@@ -2997,7 +2997,13 @@ function viewData(){
       ${!window.claude && /^https?:$/.test(location.protocol) ? `<button class="btn" data-act="sitedata">Reload data from the site</button>` : ""}
       ${!window.claude ? `<p class="small muted" style="margin:0"><b>Save everything</b> puts your rules data, missions, lists and icons in one file. Load it on a new device to set it up in one go.</p>` : ""}</div>
     <div class="card"><label class="check"><input type="checkbox" data-ch="legends"${S.settings.legends?" checked":""}><span>Show Legends datasheets</span></label></div>
-    <div class="credit">Rules data powered by Wahapedia (wahapedia.ru). Warhammer 40,000 is © Games Workshop. This is a personal, unofficial tool.</div>
+    <div class="card stack about"><h3>About</h3>
+      <div><b>Bear Bones Forge</b><div class="small muted">Army builder and battle companion for Warhammer 40,000, 10th edition</div></div>
+      <p class="small" style="margin:0">This is an unofficial, fan-made tool for personal and hobby use. It is free, it is not for sale, and it is not approved, endorsed by or affiliated with Games Workshop Limited.</p>
+      <p class="small muted" style="margin:0">Warhammer, Warhammer 40,000, 40K, the faction names, unit names and associated marks, logos and imagery are trademarks or copyright of Games Workshop Limited, used here without permission and with no challenge to their ownership intended.</p>
+      <p class="small muted" style="margin:0"><b>Art:</b> the faction icons and any army art shown in the app are not our own work. They belong to Games Workshop or their original artists, and are shown for personal reference only. The Bear Bones Forge anvil logo is the app's own.</p>
+      <p class="small muted" style="margin:0"><b>Rules:</b> datasheets, points and rules text come from Wahapedia (wahapedia.ru), a fan reference site. Always check the official published rules for the final word, especially before a tournament.</p>
+      <p class="small muted" style="margin:0">If you own any of this material and would like something removed, get in touch and it will be taken down.</p></div>
   </div>`;
 }
 
