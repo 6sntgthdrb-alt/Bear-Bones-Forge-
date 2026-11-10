@@ -731,6 +731,19 @@ details.sectfold{display:block}
 .unit-ds > .small{margin-top:-4px}
 .unit-ds .dsfold > .sec-h{margin:0}
 .unit-edit > summary{font-weight:700;padding:10px 0}
+.cgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:4px 0 6px}
+.cp{display:flex;flex-direction:column;align-items:center;padding:4px 0;border-radius:6px;font-size:.78rem;background:var(--panel2);border:1px solid var(--line)}
+.cp b{font-size:.9rem}.cp.hi{background:color-mix(in srgb,#2f9e5b 28%,var(--panel2))}.cp.mid{background:color-mix(in srgb,#d4a845 26%,var(--panel2))}.cp.lo{opacity:.75}
+.cmod{font-weight:700;color:var(--acc-text,var(--accent));text-transform:none;letter-spacing:0;margin-left:6px}
+.cused{margin-top:6px}.cused div,.cmaybe div{padding:2px 0}
+.rrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-top:1px solid var(--line);align-items:center}.rrow:first-child{border-top:0}
+.rrow .rn{grid-column:1/-1;font-weight:600}.rv{display:flex;align-items:center;gap:6px;grid-column:1/-1;flex-wrap:wrap}
+.rl{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);width:4.5em}
+.rc{font-size:.8rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+.rc.hi{background:color-mix(in srgb,#2f9e5b 30%,var(--panel2))}.rc.mid{background:color-mix(in srgb,#d4a845 30%,var(--panel2))}.rc.lo{background:color-mix(in srgb,#c0392b 22%,var(--panel2))}.rc.no{opacity:.6}
+.rdist input{max-width:110px}
+/* iOS home-screen app: with the translucent status bar, fixed bottom bars sit one status-bar height too high on launch. Making the page at least screen + status bar tall fixes it. */
+@media (display-mode: standalone){html{min-height:calc(100% + env(safe-area-inset-top))}body{min-height:calc(100dvh + env(safe-area-inset-top))}}
 </style>
 </head>
 <body data-army="">
@@ -2977,6 +2990,7 @@ document.addEventListener("click", e => {
       if (S.confirmDel !== l.id) { S.confirmDel = l.id; render(); break; }
       S.lists = S.lists.filter(x => x.id !== l.id); LS.set("lists", S.lists); if (Cloud.ready) Cloud.del("list-"+l.id).catch(()=>{});
       S.cur = null; LS.set("cur", null); S.confirmDel = null; S.view = "lists"; render(); toast("List deleted"); break;
+    case "bdist": { S.bdist = Math.max(0, num(S.bdist ?? 12) + num(t.dataset.d)); const i = $("#bdist"); if (i) i.value = S.bdist; const el = $("#bdistres"), l2 = curList(); if (el && l2) el.innerHTML = reachHtml(l2, S.bdist); break; }
     case "busedreset": { const l = curList(); if (l) { S.used ||= LS.get("used", {}); S.used[l.id] = {}; LS.set("used", S.used); render(); } break; }
     case "rtab": S.rulesTab = t.dataset.v; render(); break;
     case "import": $("#fileIn").click(); break;
@@ -3098,6 +3112,7 @@ document.addEventListener("input", e => {
   else if (k === "collq") { S.collQ = t.value; renderCollection(); }
   else if (k === "pickq") { S.pickQ = t.value; renderPickResults(); }
   else if (k === "shareopt" && t.type !== "checkbox") { S.shareOpt = Object.assign(shareOpts(), { [t.dataset.k]: t.value }); LS.set("shareOpt", S.shareOpt); clearTimeout(S.shT); S.shT = setTimeout(() => { const l2 = curList(); if (!l2) return; const txt = exportText(l2, S.shareFmt); const parts = shareOpts().discord ? splitDiscord(txt) : [txt]; if (parts.length === (S.shareParts||[]).length) { S.shareParts = parts; parts.forEach((p2, i) => { const ta = $("#sharetext" + (i ? i : "")); if (ta) ta.value = p2; }); } else { S.shareOptsOpen = true; shareList(); } }, 300); return; }
+  else if (k === "bdist") { S.bdist = t.value; const el = $("#bdistres"), l2 = curList(); if (el && l2) el.innerHTML = reachHtml(l2, t.value); }
   else if (k === "coreq") { S.coreQ = t.value; ["#coreres", "#gcoreres"].forEach(id => { const el = $(id); if (el) el.innerHTML = coreRefHtml(t.value); }); }
   else if (k === "armyq") { S.armyQ = t.value; const el = $("#armyres"); if (el && l) el.innerHTML = armyResHtml(l); }
   else if (k === "siteurl") { S.settings.siteUrl = t.value.trim(); LS.set("settings", S.settings); clearTimeout(S.qrT); S.qrT = setTimeout(renderShareQR, 600); }
@@ -3275,7 +3290,7 @@ async function copyText(txt){
 
 /* ============ offline + home screen (only when hosted outside claude.ai) ============ */
 if (!window.claude && location.protocol === "https:") {
-  [["manifest","manifest.webmanifest"],["apple-touch-icon","icon-192.png"],["icon","icon-192.png"]].forEach(([rel, href]) => { const l = document.createElement("link"); l.rel = rel; l.href = href; document.head.appendChild(l); });
+  [["manifest","manifest.webmanifest"],["apple-touch-icon","apple-touch-icon.png"],["icon","icon-192.png"]].forEach(([rel, href]) => { const l = document.createElement("link"); l.rel = rel; l.href = href; document.head.appendChild(l); });
   if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 
@@ -3491,6 +3506,76 @@ const PHASE_RX = {
   Charge: /charge phase|charge roll|declares? a charge|charge move/i,
   Fight: /fight phase|melee attack|melee weapon|fights first|pile.in|consolidat/i
 };
+/* ---- Charge odds: 2D6 plus modifiers, with an optional re-roll ---- */
+function chargeP(dist, mod = 0, rr = false){ let n = 0; for (let a = 1; a <= 6; a++) for (let b = 1; b <= 6; b++) if (a + b + mod >= dist) n++; const p = n / 36; return rr ? 1 - (1 - p) * (1 - p) : p; }
+/* Read a unit's own rules, its attached characters, enhancements and detachment for anything that changes Move or charges. */
+function chargeInfo(l, u){
+  const lead = l.units.filter(x => x.lead === u.uid && D.ds[x.ds]), members = [u, ...lead];
+  const out = { mod:0, rr:false, move:0, setMove:0, adv:false, fb:false, used:[], maybe:[] };
+  const scan = (src, name, text, leaderOf) => {
+    text.split(/(?<=[a-z0-9)\]"][.:])\s*(?=[A-Z])/).forEach(sen => { const l2 = lc(sen);
+      if (!/charge roll|move characteristic|declare a charge in a turn/.test(l2) || /subtract/.test(l2)) return;
+      if (/while a friendly|friendly .* within \d+"|select one|each time an? [a-z ]*unit from your army|aura/.test(l2) && !/leading a unit/.test(l2)) return;
+      const fx = {}; const ad = l2.match(/add (\d) to (?:the )?(?:advance and )?charge roll/); if (ad) fx.mod = +ad[1];
+      if (/re-roll (?:the )?(?:advance and )?charge roll/.test(l2)) fx.rr = true;
+      const mv = l2.match(/add (\d+)" to (?:the|its) move characteristic/); if (mv) fx.move = +mv[1];
+      const sm = l2.match(/change the move characteristic[^.]*? to (\d+)"/); if (sm) fx.setMove = +sm[1];
+      if (/declare a charge in a turn in which it (?:advanced|fell back)/.test(l2)) { if (/advanced/.test(l2)) fx.adv = true; if (/fell back/.test(l2)) fx.fb = true; }
+      if (!Object.keys(fx).length) return;
+      const cond = /once per|^if |\bif (?:this|that|it|one|your)|targets? (?:one or more|an enemy)|until the end of|instead|is shocked|while this unit contains/.test(l2) && !/^while this model is leading/.test(l2);
+      const tag = `${esc(name)} <span class="muted small">(${esc(src)})</span>`;
+      if (cond) { out.maybe.push(`${tag}: ${esc(sen.length > 130 ? sen.slice(0, 127) + "…" : sen)}`); return; }
+      if (fx.mod) out.mod += fx.mod; if (fx.rr) out.rr = true; if (fx.move) out.move += fx.move; if (fx.setMove) out.setMove = fx.setMove; if (fx.adv) out.adv = true; if (fx.fb) out.fb = true;
+      out.used.push(`${tag}: ${[fx.mod && "+" + fx.mod + " to charge", fx.rr && "re-roll charges", fx.move && "+" + fx.move + '" Move', fx.setMove && "Move " + fx.setMove + '"', fx.adv && "charge after Advancing", fx.fb && "charge after Falling Back"].filter(Boolean).join(", ")}`); });
+  };
+  members.forEach(m => {
+    (D.abil[m.ds]||[]).forEach(a => { const g = a.ability_id && D.abilities[a.ability_id]; if (/faction/i.test(a.type || "")) return;
+      const t = plain(a.description || (g && g.description) || ""); if (m !== u && !/leading a unit/i.test(t)) return; scan(m === u ? D.ds[m.ds].name : D.ds[m.ds].name + ", attached", a.name || (g && g.name) || "", t); });
+    const e = m.enh && D.enhById[m.enh]; if (e) scan(D.ds[m.ds].name + " enhancement", e.name, plain(e.description || ""));
+  });
+  if (l.det) detRules(l.army, l.det).forEach(r => { const t = plain(r.description || ""); if (/charge roll/i.test(t)) out.maybe.push(`${esc(r.name)} <span class="muted small">(detachment)</span>: check whether it applies to this unit`); });
+  const moves = members.map(m => num(((D.models[m.ds]||[])[0] || {}).m)).filter(Boolean);
+  out.base = moves.length ? Math.min(...moves) : 0;
+  out.M = (out.setMove || out.base) + out.move;
+  out.ds = members.every(m => (D.abil[m.ds]||[]).some(a => { const g = a.ability_id && D.abilities[a.ability_id]; return /^deep strike$/i.test(a.name || (g && g.name) || ""); }));
+  return out;
+}
+function chargeHtml(l, u){
+  const c = chargeInfo(l, u), pc = d => Math.round(chargeP(d, c.mod, c.rr) * 100);
+  let likely = 2; for (let d = 2; d <= 13; d++) if (chargeP(d, c.mod, c.rr) >= 2/3) likely = d;
+  const cells = [3,4,5,6,7,8,9,10,11,12].map(d => { const p = pc(d); return `<span class="cp ${p >= 80 ? "hi" : p >= 55 ? "mid" : "lo"}"><b>${d}"</b>${p}%</span>`; }).join("");
+  return { likely, M: c.M, html: `<div><div class="bh">Charge${c.mod || c.rr ? ` <span class="cmod">${[c.mod && "+" + c.mod, c.rr && "re-roll"].filter(Boolean).join(" · ")}</span>` : ""}</div>
+    <div class="cgrid">${cells}</div>
+    <div class="small">Likely charge (2 in 3): <b>${likely}"</b> · threat range ≈ <b>${c.M + likely}"</b> (Move ${c.M}" + ${likely}")${c.ds ? ` · from Deep Strike (9"): <b>${pc(9)}%</b>` : ""}</div>
+    ${c.used.length ? `<div class="small cused">${c.used.map(x => `<div>✓ ${x}</div>`).join("")}</div>` : ""}
+    ${c.maybe.length ? `<div class="small muted cmaybe">${c.maybe.map(x => `<div>• Sometimes: ${x}</div>`).join("")}</div>` : ""}</div>` };
+}
+/* ---- Distance checker: given the gap to an enemy, each unit's odds of shooting it or charging it next turn ---- */
+function reachHtml(l, gap){
+  gap = Math.max(0, num(gap));
+  const units = l.units.filter(u => D.ds[u.ds] && !(u.lead && l.units.some(x => x.uid === u.lead)));
+  const pct = p => p >= 0.995 ? "100%" : p < 0.005 ? "0%" : Math.round(p * 100) + "%";
+  const cls = p => p >= 0.8 ? "hi" : p >= 0.5 ? "mid" : p > 0 ? "lo" : "no";
+  const advP = (need, mod = 0) => need <= 0 ? 1 : Math.max(0, Math.min(6, 7 - (need - mod))) / 6;
+  const rows = units.map(u => {
+    const c = chargeInfo(l, u), M = c.M, members = [u, ...l.units.filter(x => x.lead === u.uid)];
+    const guns = members.flatMap(m => groupWeapons({ members:[m] }).filter(x => !x.melee));
+    const rng = Math.max(0, ...guns.map(x => num(x.w.range))), assault = guns.filter(x => weaponKw(x.w).assault || /assault/i.test(plain(x.w.description || "")));
+    const aRng = Math.max(0, ...assault.map(x => num(x.w.range)));
+    let shoot;
+    if (!rng) shoot = `<span class="rc no">no guns</span>`;
+    else if (gap <= rng) shoot = `<span class="rc hi">in range now</span>`;
+    else if (gap <= M + rng) shoot = `<span class="rc hi">after moving</span>`;
+    else if (aRng && gap <= M + 6 + aRng) { const p = advP(gap - M - aRng); shoot = `<span class="rc ${cls(p)}">Advance ${pct(p)}</span>`; }
+    else shoot = `<span class="rc no">out of reach</span>`;
+    // charge: move, then roll to end within 1" (Engagement Range)
+    const need = Math.ceil(gap - M - 1), pC = need <= 2 ? 1 : need > 12 + c.mod ? 0 : chargeP(need, c.mod, c.rr);
+    let charge = `<span class="rc ${cls(pC)}">${pct(pC)}</span>`;
+    if (c.adv && pC < 1 && need > 0) { let t = 0; for (let a = 1; a <= 6; a++) t += (need - a <= 2 ? 1 : chargeP(need - a, c.mod, c.rr)) / 6; charge += ` <span class="rc ${cls(t)}">${pct(t)} with Advance</span>`; }
+    return `<div class="rrow"><div class="rn">${esc(unitLabel(l, u))}${members.length > 1 ? ` <span class="muted small">+ ${members.slice(1).map(m => esc(D.ds[m.ds].name)).join(", ")}</span>` : ""}<span class="muted small"> · M ${M}"${rng ? ` · ${rng}" gun` : ""}${c.mod || c.rr ? ` · charge ${[c.mod && "+" + c.mod, c.rr && "re-roll"].filter(Boolean).join(", ")}` : ""}</span></div><div class="rv"><span class="rl">Shoot</span>${shoot}</div><div class="rv"><span class="rl">Charge</span>${charge}</div></div>`;
+  }).join("");
+  return rows || `<div class="small muted">Add some units to see their reach.</div>`;
+}
 /* ---- Briefing: studies the open list for things to measure, remember and track ---- */
 function briefingHtml(l){
   const units = l.units.filter(u => D.ds[u.ds]), byId = Object.fromEntries(units.map(u => [u.uid, u]));
@@ -3509,11 +3594,14 @@ function briefingHtml(l){
       const ds = [...new Set([...(a.text.match(/\d+(?=")/g) || []), ...(/scouts|deadly demise/i.test(a.name) && a.param ? a.param.match(/\d+/g) || [] : [])])];
       if (ds.length) dist.push(`<span class="rng"><b>${ds.map(d => d + '"').join(", ")}</b> ${esc(a.name)}</span>`); });
     const e = u.enh && D.enhById[u.enh]; if (e) { const ds = plain(e.description || "").match(/\d+(?=")/g); if (ds) dist.push(`<span class="rng"><b>${[...new Set(ds)].map(d => d + '"').join(", ")}</b> ${esc(e.name)}</span>`); }
-    const lead = u.lead && byId[u.lead] ? ` <span class="muted small">→ leading ${label(byId[u.lead])}</span>` : "";
-    return `<details class="srow brow"><summary><span class="sname">${label(u)}${lead}</span><span></span><span class="tags"><span class="abwho">M ${mv ? mv + '"' : "–"}${mv ? ` · charge ≈${mv + 7}"` : ""}</span></span></summary>
-      <div class="bgrid">${rng.length ? `<div><div class="bh">Guns</div>${rng.join("")}</div>` : ""}${dist.length ? `<div><div class="bh">Ability ranges</div>${dist.join("")}</div>` : ""}${!rng.length && !dist.length ? `<div class="small muted">Melee only, no ranges to measure. Charge reach is Move + 2D6 (7" on average, 12" at most).</div>` : ""}</div></details>`;
+    const leading = u.lead && byId[u.lead];
+    const lead = leading ? ` <span class="muted small">→ leading ${label(leading)}</span>` : "";
+    const ch = leading ? null : chargeHtml(l, u), led = l.units.filter(x => x.lead === u.uid && D.ds[x.ds]);
+    const tag = leading ? `moves with ${label(leading)}` : `M ${ch.M ? ch.M + '"' : "–"}${ch.M ? ` · charge ${ch.likely}"+ · reach ≈${ch.M + ch.likely}"` : ""}`;
+    return `<details class="srow brow"><summary><span class="sname">${label(u)}${lead}${led.length ? ` <span class="muted small">with ${led.map(label).join(", ")}</span>` : ""}</span><span></span><span class="tags"><span class="abwho">${tag}</span></span></summary>
+      <div class="bgrid">${rng.length ? `<div><div class="bh">Guns</div>${rng.join("")}</div>` : ""}${dist.length ? `<div><div class="bh">Ability ranges</div>${dist.join("")}</div>` : ""}${ch ? ch.html : `<div class="small muted">Charges with ${label(leading)}; see that unit for its charge odds.</div>`}</div></details>`;
   }).join("");
-  const measure = fold("measure", "Pre-measure", `Longest gun ${longest}" · tap a unit`, `<div class="small muted">Move, guns and any distances written in a unit's abilities. Charge reach is Move plus the 7" average charge roll.</div>${rows}`);
+  const measure = fold("measure", "Pre-measure", `Longest gun ${longest}" · tap a unit`, `<div class="small muted">Move, guns, distances in a unit's abilities and charge odds. Attached characters, enhancements and the unit's own rules are counted.</div>${rows}`);
   // 2. before the game
   const pre = [];
   const hasAb = (u, rx) => abOf(u).find(a => rx.test(a.name));
@@ -3541,7 +3629,9 @@ function briefingHtml(l){
   const kwRows = KW.map(([rx, name, tip]) => { const who = [...new Set(units.filter(u => groupWeapons({ members:[u] }).some(x => lc(plain(x.w.description || "")).includes(rx))).map(u => unitLabel(l, u)))];
     return who.length ? `<div class="brow2"><b>${name}</b> <span class="muted small">${tip}</span><div class="small">${who.map(esc).join(" · ")}</div></div>` : ""; }).join("");
   const weaponsBox = fold("wkw", "Weapon rules to remember", "Which units carry which special rules", kwRows || `<div class="small muted">No special weapon rules in this list.</div>`);
-  return `<div class="small muted">A study of <b>${esc(l.name)}</b> with the wargear you picked.</div>${measure}${before}${onceBox}${phases}${weaponsBox}`;
+  const reach = fold("reach", "Distance checker", "Measure the gap to an enemy, see who can reach it", `<label class="f rdist">Gap to the enemy unit (inches)<div class="row" style="gap:8px;align-items:center"><button class="btn small" data-act="bdist" data-d="-1" aria-label="1 inch less">−</button><input type="number" inputmode="decimal" min="0" max="72" step="0.5" id="bdist" data-in="bdist" value="${esc(S.bdist ?? 12)}" style="text-align:center;font-weight:700"><button class="btn small" data-act="bdist" data-d="1" aria-label="1 inch more">+</button></div></label>
+    <div class="small muted">Odds for your next turn: move then shoot, or move then charge. A charge has to finish within 1" of the enemy. Attached characters and unit rules are counted.</div><div id="bdistres">${reachHtml(l, S.bdist ?? 12)}</div>`);
+  return `<div class="small muted">A study of <b>${esc(l.name)}</b> with the wargear you picked.</div>${reach}${measure}${before}${onceBox}${phases}${weaponsBox}`;
 }
 function abilitiesNow(l, phase){
   const rx = PHASE_RX[phase], out = [], seen = new Set();
@@ -3621,6 +3711,13 @@ window.addEventListener("hashchange", () => { if (/^#list=/.test(location.hash))
     if (pulled) S.dataNote = "Data loaded from your account.";
     render();
   } catch(e) { setSync("Saved on this device"); }
+})();
+</script>
+<script>
+/* Home-screen app on iPhone: nudge the layout once after launch so the tab bar sits on the bottom edge. */
+(function(){ var sa = window.navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches); if (!sa) return;
+  var fix = function(){ requestAnimationFrame(function(){ window.scrollTo(0, 1); window.scrollTo(0, 0); }); };
+  window.addEventListener("load", fix); window.addEventListener("pageshow", fix); window.addEventListener("orientationchange", function(){ setTimeout(fix, 300); });
 })();
 </script>
 </body>
