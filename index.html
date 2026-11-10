@@ -704,6 +704,8 @@ header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
 .mcard.unit-dead > summary{position:relative;background:repeating-linear-gradient(135deg,rgba(0,0,0,.28) 0 8px,rgba(0,0,0,.12) 8px 16px)}
 .mcard.unit-dead > summary > :not(.deadtag){filter:grayscale(1);opacity:.4}
 .mcard.unit-dead > summary b{text-decoration:line-through;text-decoration-thickness:2px}
+/* iOS Safari zooms into any field under 16px when it is tapped */
+@supports (-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}}
 </style>
 </head>
 <body data-army="">
