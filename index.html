@@ -706,6 +706,15 @@ header.top.vstop{padding:calc(env(safe-area-inset-top) + 6px) 8px 6px}
 .mcard.unit-dead > summary b{text-decoration:line-through;text-decoration-thickness:2px}
 /* iOS Safari zooms into any field under 16px when it is tapped */
 @supports (-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}}
+.bannerwrap{position:relative}
+.sharebig{position:absolute;top:50%;right:0;transform:translateY(-50%);z-index:3;display:inline-flex;align-items:center;gap:7px;padding:10px 16px;min-height:44px;border-radius:999px;font:700 1rem var(--display);letter-spacing:.03em;color:var(--on-accent);background:var(--accent);border:1.5px solid color-mix(in srgb,var(--trim,var(--accent)) 70%,#fff);box-shadow:0 3px 12px rgba(0,0,0,.5);cursor:pointer}
+.sharebig:active{transform:translateY(-50%) scale(.96)}.brand{position:relative}
+details.sectfold{display:block}
+.sectfold > summary{cursor:pointer;list-style:none;position:relative;padding-right:28px;align-items:center}
+.sectfold > summary::-webkit-details-marker{display:none}
+.sectfold > summary::after{content:"▾";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--acc-text,var(--accent));transition:transform .2s}
+.sectfold:not([open]) > summary::after{transform:translateY(-50%) rotate(-90deg)}
+.sect-b{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 </style>
 </head>
 <body data-army="">
@@ -1709,7 +1718,7 @@ function renderTop(){
   }
   if (S.view === "game" && D) { top.innerHTML = vsBannerHtml(); top.classList.add("vstop"); return; }
   top.classList.remove("vstop");
-  top.innerHTML = `<div class="brand"><div class="mark" aria-hidden="true">BB</div><h1>Bear Bones Forge</h1><span class="sync" id="syncnote">${esc(S.syncNote)}</span></div>${bar}`;
+  top.innerHTML = `<div class="brand"><div class="mark" aria-hidden="true">BB</div><h1>Bear Bones Forge</h1><span class="sync" id="syncnote">${esc(S.syncNote)}</span>${S.view === "build" && l && D ? `<button class="sharebig" data-act="share" aria-label="Share this list"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 8 5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg><span>Share</span></button>` : ""}</div>${bar}`;
 }
 /* Game tab header: your army's banner vs your opponent's, with both army icons */
 function vsBannerHtml(){
@@ -1775,12 +1784,12 @@ function viewBuild(){
     const q = (S.addQ || "").toLowerCase().trim();
     const sr = open ? searchIds(l.army, q, g) : { ids:[], hints:{} };
     const shown = sr.ids;
-    return `<section class="sect" aria-label="${esc(g)}">
-      <div class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3><span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></div>
+    return `<details class="sect sectfold" aria-label="${esc(g)}"${keepOpen("b-" + g)}>
+      <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3><span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
       ${mine.map(u => unitCard(l, u, v)).join("")}
       ${ids.length ? `<button class="addbtn" data-act="addopen" data-v="${esc(g)}" aria-expanded="${open}">${open ? SVG.down : "+"} Add ${esc(catOne(g, l.army))}<span class="muted small">${ids.length} available</span></button>` : ""}
       ${open ? `<div class="adddrop">${ids.length > 8 ? `<input type="search" id="addq" data-in="addq" placeholder="Search by name or ability" value="${esc(S.addQ||"")}" aria-label="Search ${esc(g)}">` : ""}<div id="addres">${dsRows(shown, true, sr.hints)}</div></div>` : ""}
-    </section>`;
+    </div></details>`;
   }).join("");
   return `<div class="stack">
     ${bannerHtml(l)}
@@ -1796,8 +1805,7 @@ function viewBuild(){
     <div class="row"><span class="pill ${v.errors.length?"err":"ok"}">${v.errors.length ? v.errors.length + " problem" + (v.errors.length>1?"s":"") : "Legal list"}</span>
       ${v.warnings.length ? `<span class="pill warn">${v.warnings.length} to check</span>` : ""}
       <span class="pill num">${l.units.filter(u=>u.enh).length}/3 enhancements</span>
-      <span class="grow"></span>
-      <button class="btn small" data-act="share">Share list</button></div>
+</div>
     ${breakdownHtml(l)}
     ${issues ? `<div class="issues">${issues}</div>` : ""}
     ${(() => { const sf = shortfalls(l); return sf.length ? `<div class="issue"><div><b>Shopping list</b> (from your collection):<ul style="margin:4px 0;padding-left:1.2em">${sf.map(x => `<li>${x.short} more ${esc(D.ds[x.id].name)} model${x.short===1?"":"s"} (need ${x.need}, own ${x.own})</li>`).join("")}</ul></div></div>` : ""; })()}
@@ -2308,6 +2316,7 @@ function battleHtml(g, setup = ""){
       ${!l.det ? `<div class="small muted">Pick a detachment for this list to see its stratagems too.</div>` : ""}
       ${useChal() && challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</details>
       ${(() => { const ab = abilitiesNow(l, PHASES[g.phase]); return `<details class="fold"${keepOpen("g-abil")}><summary class="sec-h">Abilities that matter now · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">None of your army's abilities mention this phase.</div>`}</details>`; })()}` : `<div class="small muted">Choose your list to see which stratagems and abilities you can use each phase.</div>`}
+    ${g.role && g.phase >= 2 ? `<button class="btn" data-act="calcopen" data-side="${g.turn === "me" ? "me" : "opp"}">🎲 Damage calculator <span class="muted small">hit, wound and save odds</span></button>` : ""}
     ${g.role ? oppStratsHtml(g) : ""}
     ${S.marks.length ? `<details class="dsub"><summary>★ Your bookmarks · ${S.marks.length}</summary>${marksHtml()}</details>` : ""}
     ${setup ? `<div class="stack battle-missions">${setup}</div>` : ""}
