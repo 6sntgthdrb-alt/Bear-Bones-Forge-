@@ -727,7 +727,9 @@ details.sectfold{display:block}
 .rng .half{font-size:.75rem;color:var(--muted);margin-left:4px}
 .brow2{padding:6px 0;border-top:1px solid var(--line)}.brow2:first-child{border-top:0}.brow2 .pill{margin:3px 3px 0 0}
 .bonce{padding:6px 0;border-top:1px solid var(--line)}.bonce.used span{opacity:.5;text-decoration:line-through}
-.unit-ds{margin:-2px 0 4px}
+.unit-ds{display:flex;flex-direction:column;gap:12px;margin:2px 0 8px}
+.unit-ds > .small{margin-top:-4px}
+.unit-ds .dsfold > .sec-h{margin:0}
 .unit-edit > summary{font-weight:700;padding:10px 0}
 </style>
 </head>
@@ -2698,7 +2700,7 @@ function appearanceHtml(){
     <div class="stack" style="margin-top:10px">
       <div class="stylegrid">${STYLES.map(card).join("")}</div>
       <div><div class="sec-h">Light or dark</div><div class="seg" role="group" aria-label="Light or dark">${[["auto","Match my device"],["light","Light"],["dark","Dark"]].map(([k,t]) => `<button data-act="mode" data-v="${k}" aria-pressed="${S.mode===k}"${st0.forced?" disabled":""}>${t}</button>`).join("")}</div>${st0.forced?`<div class="small muted" style="margin-top:4px">${esc(st0.name)} is always ${st0.forced}.</div>`:""}</div>
-      <div><div class="sec-h">Text size</div><div class="seg" role="group" aria-label="Text size">${[["s","Small"],["m","Normal"],["l","Large"],["xl","Extra large"]].map(([k,t]) => `<button data-act="textsize" data-v="${k}" aria-pressed="${(set.textSize||"m")===k}">${t}</button>`).join("")}</div></div>
+      <div><div class="sec-h">Text size</div><div class="seg segwrap" role="group" aria-label="Text size">${[["xs","Extra small"],["s","Small"],["m","Normal"],["l","Large"],["xl","Extra large"]].map(([k,t]) => `<button data-act="textsize" data-v="${k}" aria-pressed="${(set.textSize||"m")===k}">${t}</button>`).join("")}</div></div>
       <div>${tog("armyColours", "<b>Army colours</b> — inside a list, the whole app takes on that army's colours", set.armyColours !== false)}
         ${tog("texture", "<b>Background texture</b> — the faint pattern behind everything", set.texture !== false)}
         ${tog("terms", "<b>Tap-able rule words</b> — bold key words like Wound roll or Feel No Pain in rules text; tap one to read the rule", set.terms !== false)}</div>
@@ -3307,7 +3309,7 @@ const STYLES = [
   { k:"parchment", name:"Parchment Scroll", desc:"Aged paper, ink and oxblood", fonts:"family=EB+Garamond:wght@400;500;600;700&family=IM+Fell+English+SC", pv:{ bg:"#e6d6b0", panel:"#f2e5c4", line:"#b6995d", text:"#2b1d0e", acc:"#7b2d1a", font:'"IM Fell English SC",serif' } },
   { k:"void", name:"Void Black", desc:"True black, amber highlights, always dark", fonts:"family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@500;600;700", forced:"dark", pv:{ bg:"#000000", panel:"#0b0b0d", line:"#26262b", text:"#f4f4f5", acc:"#f5a524", font:'"IBM Plex Sans Condensed",sans-serif' } }
 ];
-const TEXT_SIZES = { s:15, m:16, l:17.5, xl:19 };
+const TEXT_SIZES = { xs:13.5, s:15, m:16, l:17.5, xl:19 };
 function loadStyleFonts(st){
   if (!st.fonts || document.getElementById("font-" + st.k)) return;
   const ln = document.createElement("link"); ln.id = "font-" + st.k; ln.rel = "stylesheet";
