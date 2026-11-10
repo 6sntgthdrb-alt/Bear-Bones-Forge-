@@ -49,7 +49,8 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html{margin:0}
+body{margin:0;min-height:100vh;min-height:100dvh}
 body{background:var(--bg);color:var(--text);font:1rem/1.45 var(--body);-webkit-text-size-adjust:100%;display:flex;flex-direction:column}
 button,input,select,textarea{font:inherit;color:inherit}
 h1,h2,h3{font-family:var(--display);letter-spacing:.02em;text-wrap:balance;margin:0}
@@ -69,7 +70,7 @@ header.top{position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg),
 .pbar.over > i{background:var(--err)}
 .pline{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);margin-top:4px}
 
-main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px calc(90px + env(safe-area-inset-bottom))}
+main{flex:1;padding:14px 16px calc(90px + env(safe-area-inset-bottom))}
 .stack{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .grow{flex:1;min-width:0}
@@ -576,6 +577,35 @@ input.pl-opp-in{border-color:color-mix(in srgb,var(--pl-opp) 55%,var(--line));ba
 .fold:not([open]) > summary::after{transform:rotate(-90deg)}
 .fold[open] > summary{margin-bottom:6px}
 .battle-missions > .card{background:color-mix(in srgb,var(--panel2) 60%,var(--panel))}
+
+.foldcard > summary{cursor:pointer;list-style:none;display:flex;flex-direction:column;gap:2px;padding-right:26px;position:relative}
+.foldcard > summary::-webkit-details-marker{display:none}
+.foldcard > summary::after{content:"▾";position:absolute;right:2px;top:2px;font-size:1.1rem;color:var(--pl,var(--accent));transition:transform .2s}
+.foldcard:not([open]) > summary::after{transform:rotate(-90deg)}
+.foldcard > summary h3{margin:0}
+.card.pl-me > summary h3,.card.pl-opp > summary h3{color:color-mix(in srgb,var(--pl) 80%,var(--text))}
+.oppstrats > summary{color:color-mix(in srgb,var(--pl-opp) 80%,var(--text)) !important;border-bottom-color:color-mix(in srgb,var(--pl-opp) 45%,transparent) !important}
+.turnbar{position:fixed;left:8px;right:8px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:7;display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;border-radius:14px;background:var(--pl);color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.45);max-width:720px;margin:0 auto}
+.turnbar .tb-txt{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+.turnbar .tb-txt b{font-size:1.02rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff !important}
+.turnbar .tb-txt span{font-size:.8rem;opacity:.9}
+.turnbar .tb-next{border:0;border-radius:10px;padding:12px 16px;font:700 1rem var(--body);background:#fff;color:#111;cursor:pointer}
+.tb-space{height:64px}
+body:has(.turnbar) .toast{bottom:calc(150px + env(safe-area-inset-bottom))}
+
+.attbox{border:2px solid var(--trim);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:8px;background:color-mix(in srgb,var(--trim) 6%,transparent)}
+.attbox-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px}
+.attbox-h .kind{font:700 .7rem var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--trim)}
+.rulesbox{border-style:dashed}
+
+.odds{font-size:.82rem;padding:5px 8px;border-radius:6px;background:color-mix(in srgb,var(--accent) 10%,var(--panel2));border:1px dashed color-mix(in srgb,var(--accent) 45%,var(--line))}
+.calcres{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:var(--r);background:var(--stat-bg);border:1px solid var(--line);border-top:3px solid var(--accent2,var(--accent))}
+.crow{display:flex;justify-content:space-between;gap:10px;font-size:.92rem}
+.crow b{font-variant-numeric:tabular-nums}
+.crow.big2{font-size:1.15rem;padding-top:4px;border-top:1px solid var(--line)}
+.crow small{font-size:.75rem;color:var(--muted)}
+.calcopts{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+@media (max-width:380px){.calcopts{grid-template-columns:1fr}}
 #printarea{display:none}
 @media print{
   body > *:not(#printarea){display:none !important}
@@ -687,7 +717,7 @@ function termIndex(){
   TERMS = { g:G, list:[], ci:null, cs:null };
   if (!G) return TERMS;
   const add = (key, pat, cs) => { try { TERMS.list.push({ key, rx:new RegExp("^(?:" + pat + ")$", cs ? "" : "i"), pat, cs }); } catch {} };
-  Object.entries(G.terms || {}).forEach(([k, t]) => add("t:" + k, t.pattern, t.cs));
+  Object.entries(G.terms || {}).forEach(([k, t]) => { if (t.pattern) add("t:" + k, t.pattern, t.cs); });
   Object.entries(G.weapon || {}).forEach(([k, w]) => { if (/\s|-/.test(w.name)) add("w:" + k, w.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+"), false); });
   const join = arr => arr.length ? new RegExp("(?<![\\w-])(?:" + arr.map(x => x.pat).sort((a,b) => b.length - a.length).join("|") + ")(?![\\w-])", "g" + (arr[0].cs ? "" : "i")) : null;
   TERMS.ci = join(TERMS.list.filter(x => !x.cs)); TERMS.cs = join(TERMS.list.filter(x => x.cs));
@@ -720,6 +750,14 @@ function termRich(text, skip){
   const t = document.createElement("template");
   t.innerHTML = String(text||"").split(/\n{2,}/).map(p => "<p>" + esc(p) + "</p>").join("");
   linkTerms(t.content, skip); return t.innerHTML;
+}
+function coreRefHtml(q, opt = {}){
+  if (!G || !G.terms) return `<div class="small muted">Load your Rules glossary file on the Settings tab to see the Core Rules here.</div>`;
+  q = lc(q || "").trim();
+  const all = Object.entries(G.terms).map(([k, t]) => ({ k, ...t })).sort((a, b) => a.name.localeCompare(b.name));
+  const hits = q ? all.filter(t => lc(t.name).includes(q) || lc(t.text).includes(q)).sort((a, b) => (lc(b.name).includes(q) - lc(a.name).includes(q)) || a.name.localeCompare(b.name)) : all;
+  return hits.length ? hits.map(t => `<details class="srow"><summary><span class="sname">${esc(t.name)}</span>${starBtn("term:" + t.k, t.name)}</summary><div class="rich ruletext">${termRich(t.text, "t:" + t.k)}</div></details>`).join("")
+    : `<div class="small muted">No core rule matches "${esc(q)}". Your Core Rules PDF ends partway through the terrain section, so Ruins, Woods and Objective markers aren't included.</div>`;
 }
 function showTerm(key){
   if (!G) return;
@@ -1552,9 +1590,9 @@ function render(){
   applyTheme(ra);
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === S.view ? "page" : "false"));
   renderTop();
-  const m = $("#main"); const st = m.scrollTop;
+  const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
-  m.scrollTop = st;
+  window.scrollTo(0, st);
 }
 function renderTop(){
   const l = curList(); const top = $("#top");
@@ -1739,12 +1777,17 @@ function listDsHtml(l, keyPfx = ""){
               ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
               ${wgPicks(x).length ? `<div class="small"><b>Wargear picked:</b> ${wgPicks(x).map(p => esc(p.label)).join("; ")}</div>` : ""}
               ${x.notes && x.notes.trim() ? `<div class="small"><b>Notes:</b> ${esc(x.notes)}</div>` : ""}
-              ${dsBody(x.ds, { weapons: wp, compact: true })}
+              ${dsBody(x.ds, { weapons: wp, compact: true, vs: keyPfx ? targetFor("me") : null })}
               ${!wp ? `<div class="small muted">Couldn't work out this unit's exact wargear, so every weapon is shown.</div>` : ""}`;
           };
           const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0];
           const total = [u, ...leaders].reduce((a,x) => a + unitCost(x) + enhCost(x), 0);
           const title = leaders.length ? `${leaders.map(x => esc(unitLabel(l,x))).join(" + ")} + ${esc(unitLabel(l,u))}` : esc(unitLabel(l,u));
+          if (leaders.length) {
+            const one = (x, role) => { const rr = costRows(x.ds), r2 = rr.find(y => y.line === x.line) || rr[0];
+              return `<details class="mcard"${keyPfx ? keepAttr(keyPfx + x.uid) : ""}><summary><span class="kind">${role}</span><b>${esc(unitLabel(l,x))}</b><span class="muted small">${r2 ? esc(plain(r2.label)) + " · " : ""}${unitCost(x)+enhCost(x)} pts${x.warlord ? " · Warlord" : ""}</span>${keyPfx ? trackChip("me", x) : ""}</summary><div class="stack" style="padding-bottom:6px">${part(x, "")}</div></details>`; };
+            return `<div class="attbox"><div class="attbox-h"><span class="kind">Attached unit</span><b>${title}</b><span class="muted small">${total} pts together</span></div>${leaders.map(x => one(x, "Leader")).join("")}${one(u, "Bodyguard")}</div>`;
+          }
           return `<details class="mcard${leaders.length ? " attached" : ""}"${keyPfx ? keepAttr(keyPfx + u.uid) : ""}><summary>${leaders.length ? `<span class="kind">Attached unit</span>` : ""}<b>${title}</b><span class="muted small">${leaders.length ? "" : (r ? esc(plain(r.label)) + " · " : "")}${total} pts${!leaders.length && u.warlord ? " · Warlord" : ""}</span>${keyPfx ? [...leaders, u].map(x => trackChip("me", x)).join("") : ""}</summary>
             <div class="stack" style="padding-bottom:6px">${leaders.length ? leaders.map(x => part(x, "Leader")).join("") + part(u, "Bodyguard") : part(u, "")}</div></details>`;
         }).join("");
@@ -1757,10 +1800,12 @@ function viewRules(){
   const l = curList();
   const army = l ? l.army : S.rulesArmy;
   const det = l ? l.det : null;
-  const tabs = [["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
+  const tabs = [["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["core","Core rules"],["marks","★ Saved"]];
   const mine = l && S.rulesMine !== false;
   let body = "";
-  if (S.rulesTab === "marks") {
+  if (S.rulesTab === "core") {
+    body = `<input type="search" id="coreq" data-in="coreq" placeholder="Search the Core Rules, e.g. cover, transport, charge" value="${esc(S.coreQ||"")}" aria-label="Search core rules"><div id="coreres">${coreRefHtml(S.coreQ)}</div>`;
+  } else if (S.rulesTab === "marks") {
     body = `<div class="sec-h">Your bookmarks · ${S.marks.length}</div>` + marksHtml();
   } else if (S.rulesTab === "army") {
     const ab = armyRules(army);
@@ -1873,7 +1918,7 @@ function dsBody(id, opt = {}){
     const rows = wg.filter(w => (w.type||"").toLowerCase().startsWith(type));
     if (!rows.length) return "";
     return `<div><div class="sec-h">${type==="ranged"?"Ranged weapons":"Melee weapons"}</div>${rows.map(w => { const kw = w.description ? plain(w.description).split(/\s*,\s*/).filter(Boolean) : [];
-      return `<div class="wpn"><div class="wn">${esc(w.name)}</div><div class="sg6 sm">${box("RNG", /^\d+$/.test(w.range) ? w.range + '"' : (w.range||"Melee"))}${box("A",w.a)}${box(type==="ranged"?"BS":"WS", /^\d$/.test(w.bs_ws) ? w.bs_ws + "+" : w.bs_ws)}${box("S",w.s)}${box("AP",w.ap)}${box("D",w.d)}</div>${kw.length ? `<div class="wkw">${kw.map(k => ruleFor(k) ? `<button class="wtag" data-act="rule" data-k="${esc(k)}">${esc(k)}</button>` : `<span class="wtag">${esc(k)}</span>`).join("")}</div>` : ""}</div>`; }).join("")}</div>`;
+      return `<div class="wpn"><div class="wn">${esc(w.name)}</div><div class="sg6 sm">${box("RNG", /^\d+$/.test(w.range) ? w.range + '"' : (w.range||"Melee"))}${box("A",w.a)}${box(type==="ranged"?"BS":"WS", /^\d$/.test(w.bs_ws) ? w.bs_ws + "+" : w.bs_ws)}${box("S",w.s)}${box("AP",w.ap)}${box("D",w.d)}</div>${kw.length ? `<div class="wkw">${kw.map(k => ruleFor(k) ? `<button class="wtag" data-act="rule" data-k="${esc(k)}">${esc(k)}</button>` : `<span class="wtag">${esc(k)}</span>`).join("")}</div>` : ""}${opt.vs ? oddsLine(w, opt.vs) : ""}</div>`; }).join("")}</div>`;
   };
   const resolved = ab.map(a => { const g = a.ability_id && D.abilities[a.ability_id]; return { type:a.type||"", name:a.name || (g && g.name) || "", desc:a.description || (g && g.description) || "", param:a.parameter||"", model:a.model||"" }; });
   const core = resolved.filter(a => /core|faction/i.test(a.type) && !/datasheet/i.test(a.type));
@@ -1964,12 +2009,122 @@ function trackHtml(side, u){
     ${t.dead ? `<span class="pill err">Destroyed</span>` : t.half ? `<span class="pill warn">Below Half-strength</span>` : ""}
   </div>`;
 }
+function armyRulesHtml(l, key){
+  const ab = armyRules(l.army), dr = l.det ? detRules(l.army, l.det) : [], en = l.units.filter(u => u.enh && D.enhById[u.enh]);
+  if (!ab.length && !dr.length && !en.length) return "";
+  return `<details class="mcard rulesbox"${keepAttr(key)}><summary><span class="kind">Rules</span><b>Army & detachment rules</b><span class="muted small">${[...ab.map(a => a.name), ...dr.map(a => a.name)].map(esc).join(" · ")}</span></summary><div class="stack" style="padding-bottom:6px">
+    ${ab.map(a => `<div><div class="sec-h">Army rule · ${esc(a.name)}</div><div class="rich">${sanitize(a.description)}</div></div>`).join("")}
+    ${dr.map(a => `<div><div class="sec-h">${esc(l.det.name)} · ${esc(a.name)}</div><div class="rich">${sanitize(a.description)}</div></div>`).join("")}
+    ${en.map(u => { const e = D.enhById[u.enh]; return `<div><div class="sec-h">Enhancement · ${esc(e.name)} <span class="muted">(${esc(unitLabel(l, u))})</span></div><div class="rich">${sanitize(e.description)}</div></div>`; }).join("")}
+  </div></details>`;
+}
+
+/* ============ odds + damage calculator (expected values) ============ */
+function avgDice(v){ v = String(v || "").toUpperCase().replace(/\s/g, ""); let t = 0;
+  v.split("+").forEach(part => { const m = part.match(/^(\d*)D(\d+)$/); if (m) t += (m[1] ? +m[1] : 1) * (+m[2] + 1) / 2; else t += num(part); }); return t; }
+function weaponKw(w){
+  const d = lc(plain(w.description || "")), k = { anti:[] };
+  k.lethal = /lethal hits/.test(d); k.dev = /devastating wounds/.test(d); k.torrent = /torrent/.test(d); k.twin = /twin-linked/.test(d);
+  k.blast = /\bblast\b/.test(d); k.heavy = /\bheavy\b/.test(d); k.lance = /\blance\b/.test(d); k.ignoresCover = /ignores cover/.test(d);
+  const sh = d.match(/sustained hits (d?\d+)/); k.sustained = sh ? avgDice(sh[1]) : 0;
+  const me = d.match(/melta (d?\d+)/); k.melta = me ? avgDice(me[1]) : 0;
+  const rf = d.match(/rapid fire (d?\d+)/); k.rapid = rf ? avgDice(rf[1]) : 0;
+  [...d.matchAll(/anti-([a-z ]+?) (\d)\+/g)].forEach(m => k.anti.push({ kw:m[1].trim().toUpperCase(), n:+m[2] }));
+  return k;
+}
+function unitFnp(u){ const a = (D.abil[u.ds]||[]).find(x => /feel no pain/i.test(x.name || "") || /feel no pain/i.test(plain(x.description || "")));
+  if (!a) return 0; const m = ((a.parameter || "") + " " + plain(a.description || "")).match(/(\d)\+/); return m ? +m[1] : 0; }
+function targetOf(side, u){
+  const m0 = (D.models[u.ds]||[])[0] || {}, alive = S.game && S.game.track && S.game.track[side + ":" + u.uid] ? trackInfo(side, u).m : unitModels(u);
+  return { name: D.ds[u.ds].name, t:num(m0.t), sv:num(m0.sv) || 7, inv:num(m0.inv_sv) || 0, w:Math.max(1, num(m0.w)), models:Math.max(1, alive), fnp:unitFnp(u), kw:D.kwSet[u.ds] || new Set() };
+}
+function woundNeed(S_, T){ return S_ >= 2*T ? 2 : S_ > T ? 3 : S_ === T ? 4 : 2*S_ <= T ? 6 : 5; }
+function saveNeed(w, tg, cover){ const ap = Math.abs(num(w.ap)), k = weaponKw(w);
+  let arm = tg.sv + ap; if (cover && !k.ignoresCover && !(tg.sv <= 3 && ap === 0)) arm -= 1;
+  const need = tg.inv ? Math.min(arm, tg.inv) : arm; return Math.max(2, need); }
+function calcAttack(w, firing, tg, o = {}){
+  const k = weaponKw(w), melee = /melee/i.test(w.type || w.range || "");
+  let A = avgDice(w.a) * firing;
+  if (k.rapid && o.half) A += k.rapid * firing;
+  if (k.blast) A += Math.floor(tg.models / 5) * firing;
+  const re = (p, mode, fail) => mode === "all" ? p + (1 - p) * p : mode === "1" ? p + (1/6) * p : p;
+  let hitP = 1, critP = 0;
+  if (!k.torrent) { let need = num(w.bs_ws) || 4; if (k.heavy && o.still && !melee) need -= 1; need = Math.min(6, Math.max(2, need));
+    hitP = (7 - need) / 6; critP = 1/6; const rr = o.rrHit || "";
+    const hp2 = re(hitP, rr); critP = rr === "all" ? critP + (1 - hitP) * critP : rr === "1" ? critP + (1/6) * critP : critP; hitP = hp2; }
+  let hits = A * hitP; const crits = A * critP;
+  if (k.sustained) hits += crits * k.sustained;
+  const auto = k.lethal ? crits : 0, toRoll = hits - auto;
+  let wNeed = woundNeed(num(w.s), tg.t); if (k.lance && o.charged) wNeed = Math.max(2, wNeed - 1);
+  let critT = 6; k.anti.forEach(a => { if ([...tg.kw].some(x => x === a.kw || x.includes(a.kw))) critT = Math.min(critT, a.n); });
+  let wP = Math.max((7 - wNeed) / 6, (7 - critT) / 6), cwP = (7 - critT) / 6;
+  const rrW = k.twin ? "all" : (o.rrWound || "");
+  const wP2 = re(wP, rrW); cwP = rrW === "all" ? cwP + (1 - wP) * cwP : rrW === "1" ? cwP + (1/6) * cwP : cwP; wP = wP2;
+  const wounds = toRoll * wP + auto, devW = k.dev ? toRoll * cwP : 0, normal = wounds - devW;
+  const sNeed = saveNeed(w, tg, o.cover && !melee), failP = sNeed > 6 ? 1 : (sNeed - 1) / 6;
+  const unsaved = normal * failP;
+  let D_ = avgDice(w.d); if (k.melta && o.half) D_ += k.melta;
+  const fnpKeep = tg.fnp ? 1 - (7 - tg.fnp) / 6 : 1;
+  const dmg = (unsaved * Math.min(D_, tg.w) + devW * D_) * fnpKeep;
+  const kills = Math.min(tg.models, ((unsaved * Math.min(D_, tg.w)) * fnpKeep + devW * D_ * fnpKeep) / tg.w);
+  return { A, hits, wounds, unsaved: unsaved + devW, dmg, kills, hitNeed: k.torrent ? 0 : Math.min(6, Math.max(2, (num(w.bs_ws) || 4) - (k.heavy && o.still && !melee ? 1 : 0))), wNeed, sNeed, critT, k };
+}
+function oddsLine(w, tg){
+  const k = weaponKw(w), wn = woundNeed(num(w.s), tg.t), sv = saveNeed(w, tg, false);
+  let crit = 6; k.anti.forEach(a => { if ([...tg.kw].some(x => x === a.kw || x.includes(a.kw))) crit = Math.min(crit, a.n); });
+  return `<div class="odds">vs ${esc(tg.name)}: <b>Hit ${k.torrent ? "auto" : (num(w.bs_ws) || "?") + "+"}</b> · <b>Wound ${Math.min(wn, crit)}+</b> · <b>Save ${sv > 6 ? "none" : sv + "+"}${tg.inv && tg.inv === sv ? " (invuln)" : ""}</b>${tg.fnp ? ` · FNP ${tg.fnp}+` : ""}</div>`;
+}
+function sideUnits(side){ const g = S.game || {}; if (side === "me") { const l = S.lists.find(x => x.id === g.listId); return l ? l.units.filter(u => D.ds[u.ds]) : []; } return g.opp ? g.opp.units.filter(u => D.ds[u.ds]) : []; }
+function targetFor(side){ const g = S.game || {}, other = side === "me" ? "opp" : "me", id = side === "me" ? g.tgt : g.tgtOpp; const u = id && sideUnits(other).find(x => x.uid === id); return u ? targetOf(other, u) : null; }
+function targetPicker(side){
+  const g = S.game || {}, other = side === "me" ? "opp" : "me", us = sideUnits(other), cur = side === "me" ? g.tgt : g.tgtOpp;
+  if (!us.length) return `<div class="small muted">${side === "me" ? "Import your opponent's list" : "Choose your list"} to see hit, wound and save rolls against their units.</div>`;
+  return `<div class="row" style="gap:6px;align-items:flex-end"><label class="f grow">Attacking which ${side === "me" ? "enemy" : "of your"} unit?<select data-ch="gtgt" data-side="${side}"><option value="">Choose a target…</option>${us.map(u => `<option value="${u.uid}"${cur === u.uid ? " selected" : ""}>${esc(D.ds[u.ds].name)}</option>`).join("")}</select></label>
+    <button class="btn small" data-act="calcopen" data-side="${side}">Damage calculator</button></div>`;
+}
+function calcHtml(){
+  const c = S.calc ||= {}, side = c.side || "me", other = side === "me" ? "opp" : "me";
+  const atk = sideUnits(side), defs = sideUnits(other);
+  if (!atk.length) return `<div class="small muted">Choose your list and import your opponent's list in the Game tab first.</div>`;
+  const au = atk.find(u => u.uid === c.unit) || atk[0]; c.unit = au.uid;
+  const st = unitWeapons(au), seen = new Set();
+  const wps = (D.wg[au.ds]||[]).filter(w => (!st || st.has(wStem(w.name))) && !seen.has(w.name) && seen.add(w.name));
+  const w = wps.find(x => x.name === c.weapon) || wps[0]; if (w) c.weapon = w.name;
+  const du = defs.find(u => u.uid === c.target) || defs[0]; if (du) c.target = du.uid;
+  const tg = du ? targetOf(other, du) : null;
+  if (c.firing == null || c.firingFor !== au.uid) { c.firing = unitModels(au); c.firingFor = au.uid; }
+  const sel = (k, opts, cur, label) => `<label class="f grow">${label}<select data-ch="calc" data-k="${k}">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`;
+  const chk = (k, label) => `<label class="check"><input type="checkbox" data-ch="calc" data-k="${k}"${c[k] ? " checked" : ""}><span>${label}</span></label>`;
+  let res = "";
+  if (w && tg) { const r = calcAttack(w, Math.max(1, num(c.firing)), tg, c);
+    const f = x => x >= 10 ? x.toFixed(0) : x.toFixed(1);
+    res = `<div class="calcres">
+      <div class="crow"><span>Attacks</span><b>${f(r.A)}</b></div>
+      <div class="crow"><span>Hits ${r.hitNeed ? `(${r.hitNeed}+)` : "(auto)"}</span><b>${f(r.hits)}</b></div>
+      <div class="crow"><span>Wounds (${Math.min(r.wNeed, r.critT)}+)</span><b>${f(r.wounds)}</b></div>
+      <div class="crow"><span>Failed saves ${r.sNeed > 6 ? "(no save)" : `(save ${r.sNeed}+)`}${r.k.dev ? " incl. Devastating" : ""}</span><b>${f(r.unsaved)}</b></div>
+      <div class="crow big2"><span>Expected damage</span><b>${f(r.dmg)}</b></div>
+      <div class="crow big2"><span>Models killed (≈)</span><b>${f(r.kills)} <small>of ${tg.models}</small></b></div>
+      <div class="small muted">Averages over many rolls, not a promise. ${[r.k.lethal && "Lethal Hits", r.k.sustained && "Sustained Hits", r.k.dev && "Devastating Wounds", r.k.torrent && "Torrent", r.k.twin && "Twin-linked", r.k.blast && "Blast", r.k.melta && "Melta", r.k.rapid && "Rapid Fire", r.k.lance && "Lance", r.k.heavy && "Heavy", r.k.anti.length && "Anti-"].filter(Boolean).join(", ") ? "Counted: " + [r.k.lethal && "Lethal Hits", r.k.sustained && "Sustained Hits", r.k.dev && "Devastating Wounds", r.k.torrent && "Torrent", r.k.twin && "Twin-linked", r.k.blast && "Blast", r.k.melta && "Melta", r.k.rapid && "Rapid Fire", r.k.lance && "Lance", r.k.heavy && "Heavy", r.k.anti.length && "Anti-"].filter(Boolean).join(", ") + "." : ""}${tg.fnp ? ` Target's Feel No Pain ${tg.fnp}+ included.` : ""}</div></div>`; }
+  return `<div class="seg" role="group" aria-label="Who is attacking"><button data-act="calcside" data-v="me" aria-pressed="${side==="me"}" class="pl-me-b">${esc((S.game.names||[])[0] || "Me")} attacks</button><button data-act="calcside" data-v="opp" aria-pressed="${side==="opp"}" class="pl-opp-b">${esc((S.game.names||[])[1] || "Opponent")} attacks</button></div>
+    <div class="row">${sel("unit", atk.map(u => [u.uid, D.ds[u.ds].name]), au.uid, "Attacking unit")}</div>
+    <div class="row">${sel("weapon", wps.map(x => [x.name, x.name + " (" + (/melee/i.test(x.type) ? "melee" : x.range + '"') + ")"]), w ? w.name : "", "Weapon")}<label class="f" style="width:96px">Models<input type="number" min="1" inputmode="numeric" data-ch="calc" data-k="firing" value="${esc(c.firing)}"></label></div>
+    ${w ? `<div class="small muted">A ${esc(w.a)} · ${/melee/i.test(w.type) ? "WS" : "BS"} ${esc(w.bs_ws)} · S ${esc(w.s)} · AP ${esc(w.ap)} · D ${esc(w.d)}${w.description ? " · " + esc(plain(w.description)) : ""}</div>` : ""}
+    <div class="row">${defs.length ? sel("target", defs.map(u => [u.uid, D.ds[u.ds].name]), du.uid, "Target") : `<div class="small muted">No units on the other side yet.</div>`}</div>
+    ${tg ? `<div class="small muted">T ${tg.t} · Sv ${tg.sv}+${tg.inv ? ` · ${tg.inv}++ invuln` : ""} · W ${tg.w} · ${tg.models} model${tg.models === 1 ? "" : "s"}${tg.fnp ? ` · FNP ${tg.fnp}+` : ""}</div>` : ""}
+    <div class="calcopts">${chk("half", "Within half range (Melta, Rapid Fire)")}${chk("still", "Remained stationary (Heavy)")}${chk("charged", "Charged this turn (Lance)")}${chk("cover", "Target has cover")}</div>
+    <div class="row">${sel("rrHit", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]], c.rrHit || "", "Hit re-rolls")}${sel("rrWound", [["","No re-rolls"],["1","Re-roll 1s"],["all","Re-roll all"]], c.rrWound || "", "Wound re-rolls")}</div>
+    ${res}`;
+}
+function openCalc(){ openSheet("calc", "Damage calculator", calcHtml()); }
+
 function gameDsHtml(g){
   const l = S.lists.find(x => x.id === g.listId);
   const mine = l ? `<details class="card pl-me gds"${keepAttr("g-mine")}><summary><span class="gds-h">My army</span><span class="small muted"><span id="g-myname">${esc(l.name)}</span> · ${validate(l).total} pts · ${l.units.length} units</span></summary>
-      <div class="stack" style="margin-top:10px"><label class="f" for="g-myname-in">Army name<input type="text" id="g-myname-in" data-in="gmyname" value="${esc(l.name)}"></label>${l.units.length ? listDsHtml(l, "gm-") : `<div class="small muted">This list has no units yet.</div>`}</div></details>`
+      <div class="stack" style="margin-top:10px"><label class="f" for="g-myname-in">Army name<input type="text" id="g-myname-in" data-in="gmyname" value="${esc(l.name)}"></label>${targetPicker("me")}${armyRulesHtml(l, "g-myrules")}${l.units.length ? listDsHtml(l, "gm-") : `<div class="small muted">This list has no units yet.</div>`}</div></details>`
     : `<div class="card pl-me"><span class="gds-h">My army</span><div class="small muted">Choose your list in Battle mode above to see your datasheets here.</div></div>`;
-  return `<div class="stack" style="gap:10px"><div class="sec-h">Datasheets</div>${mine}${oppHtml(g)}</div>`;
+  const core = `<details class="card foldcard"${keepAttr("g-core")}><summary><h3>Core rules</h3><span class="muted small">Search cover, charging, transports, visibility…</span></summary><div class="stack" style="margin-top:10px;gap:6px"><input type="search" id="gcoreq" data-in="coreq" placeholder="Search the Core Rules" value="${esc(S.coreQ||"")}" aria-label="Search core rules"><div id="gcoreres">${coreRefHtml(S.coreQ)}</div></div></details>`;
+  return `<div class="stack" style="gap:10px">${core}<div class="sec-h">Datasheets</div>${mine}${oppHtml(g)}</div>`;
 }
 function oppHtml(g){
   const o = g.opp;
@@ -1977,11 +2132,11 @@ function oppHtml(g){
   const tot = o.units.reduce((a,u) => a + unitCost(u) + enhCost(u), 0);
   return `<details class="card pl-opp gds"${keepAttr("g-opp")}><summary><span class="gds-h">Opponent's army</span><span class="small muted"><span id="g-oppname">${esc(o.name)}</span> · ${tot} pts · ${o.units.length} units</span></summary><div class="stack" style="margin-top:10px">
     <label class="f" for="g-oppname-in">Army name<input type="text" id="g-oppname-in" data-in="goppname" value="${esc(o.name)}"></label>
-    <div class="small muted">${esc(armyName(o.army, o))}${o.det ? " · " + esc(o.det.name) : ""}</div>
+    <div class="small muted">${esc(armyName(o.army, o))}${o.det ? " · " + esc(o.det.name) : ""}</div>${targetPicker("opp")}${armyRulesHtml(o, "g-opprules")}
     ${o.units.filter(u => D.ds[u.ds]).map(u => { const rows = costRows(u.ds), r = rows.find(x => x.line === u.line) || rows[0]; const e = u.enh && D.enhById[u.enh];
       return `<details class="mcard"${keepAttr("go-" + u.uid)}><summary><b>${esc(unitLabel(o,u))}</b><span class="muted small">${r ? esc(plain(r.label)) + " · " : ""}${unitCost(u)+enhCost(u)} pts${u.warlord ? " · Warlord" : ""}</span>${trackChip("opp", u)}</summary><div class="stack" style="padding-bottom:6px">${trackHtml("opp", u)}
         ${e ? `<div class="card"><div class="sec-h">Enhancement · ${esc(e.name)}</div><div class="rich">${sanitize(e.description)}</div></div>` : ""}
-        ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true })}</div></details>`; }).join("")}
+        ${dsBody(u.ds, { weapons: unitWeapons(u), compact:true, vs: targetFor("opp") })}</div></details>`; }).join("")}
     <div class="row"><button class="btn small" data-act="oppimport">Replace</button><button class="btn small danger" data-act="oppclear">Remove</button></div></div></details>`;
 }
 function keepOpen(k){ return ` data-keep="${k}"${S.keep[k] === false ? "" : " open"}`; }
@@ -1998,15 +2153,26 @@ function battleHtml(g, setup = ""){
     <div class="seg" role="group" aria-label="Whose turn">${gOrder(g).map(p => p === 0 ? `<button class="pl-me-b" data-act="gturn" data-v="me" aria-pressed="${g.turn==="me"}">${turnName(g.names[0])}</button>` : `<button class="pl-opp-b" data-act="gturn" data-v="opp" aria-pressed="${g.turn==="opp"}">${turnName(g.names[1])}</button>`).join("")}</div>
     <div class="phases" role="group" aria-label="Phase">${PHASES.map((p,i) => `<button data-act="gphase" data-v="${i}" aria-pressed="${g.phase===i}" aria-label="${p} phase">${["Command","Move","Shoot","Charge","Fight"][i]}</button>`).join("")}</div>
     <div class="row"><span class="small muted grow">${who} ${PHASES[g.phase]} phase${g.phase===0 ? " · both players gained 1CP" : ""}</span><button class="btn primary" data-act="gnext">Next phase →</button></div>`}
-    ${setup ? `<div class="stack battle-missions">${setup}</div>` : ""}
     ${l ? `<details class="fold"${keepOpen("g-strats")}><summary class="sec-h">Stratagems you can use now · ${list.length}</summary>
       <div class="cpnote">You have <b>${num(g.cp[0])} CP</b>.${list.some(s => num(s.cp_cost) > num(g.cp[0])) ? " Faded ones cost more than you have." : ""}</div>
       ${list.length ? list.map(s => stratRow(s, num(g.cp[0]))).join("") : `<div class="small muted">Nothing usable in this phase.</div>`}
       ${!l.det ? `<div class="small muted">Pick a detachment for this list to see its stratagems too.</div>` : ""}
       ${challengerStrats().length ? `<label class="f" for="gchal" style="margin-top:8px">Challenger card you hold<select id="gchal" data-ch="gchal"><option value="">None</option>${challengerStrats().map(s => { const nm = s.name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); return `<option value="${esc(s.name)}"${lc(g.chal||"") === lc(s.name) ? " selected" : ""}>${esc(nm)}</option>`; }).join("")}</select></label>` : ""}</details>
       ${(() => { const ab = abilitiesNow(l, PHASES[g.phase]); return `<details class="fold"${keepOpen("g-abil")}><summary class="sec-h">Abilities that matter now · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">None of your army's abilities mention this phase.</div>`}</details>`; })()}` : `<div class="small muted">Choose your list to see which stratagems and abilities you can use each phase.</div>`}
+    ${oppStratsHtml(g)}
     ${S.marks.length ? `<details class="dsub"><summary>★ Your bookmarks · ${S.marks.length}</summary>${marksHtml()}</details>` : ""}
+    ${setup ? `<div class="stack battle-missions">${setup}</div>` : ""}
   </div>`;
+}
+function oppStratsHtml(g){
+  const o = g.opp; if (!o || !D) return "";
+  const ph = PHASES[g.phase], theirs = g.turn === "opp";
+  const okTurn = s => { const t = lc(s.turn); return !t || t.startsWith("either") || (theirs ? t.startsWith("your") : t.startsWith("opponent")); };
+  const okPhase = s => { const p = lc(s.phase); return !p || p.includes("any phase") || p.includes(lc(ph)); };
+  const list = [...(o.det ? detStrats(o.army, o.det) : []), ...coreStrats()].filter(s => okTurn(s) && okPhase(s));
+  return `<details class="fold pl-opp oppstrats"${keepOpen("g-ostrats")}><summary class="sec-h">Opponent can use now · ${list.length}</summary>
+    <div class="cpnote">${esc(g.names[1])} has <b>${num(g.cp[1])} CP</b>.${o.det ? "" : " Their list has no detachment, so only core stratagems show."}</div>
+    ${list.length ? list.map(s => stratRow(s, num(g.cp[1]))).join("") : `<div class="small muted">Nothing they can use in this phase.</div>`}</details>`;
 }
 const gOrder = g => g.role === "def" ? [1, 0] : [0, 1];
 const roleOf2 = (g, p) => (g.role === "att") === (p === 0) ? "Attacker" : "Defender";
@@ -2074,9 +2240,10 @@ function secPanel(g, p){
           return pool.length ? `<label class="f" for="gpick${p}">Or pick a specific card${p === 1 ? " (the one your opponent drew)" : ""}<select id="gpick${p}" data-ch="gpick" data-p="${p}"><option value="">Choose a card…</option>${[...pool].sort().map(n => `<option>${esc(n)}</option>`).join("")}</select></label>` : ""; })() : "")
       + (ps.done.length ? `<div class="small muted">Achieved: ${ps.done.map(esc).join(", ")}</div>` : "");
   }
-  return `<div class="card stack ${p === 0 ? "pl-me" : "pl-opp"}"><div class="row"><h3 class="grow">${esc(g.names[p])}: secondaries</h3>
+  const sum = ps.mode === "fixed" ? ps.fixed.filter(Boolean).join(", ") : ps.active.join(", ");
+  return `<details class="card foldcard ${p === 0 ? "pl-me" : "pl-opp"}"${keepOpen("g-sec" + p)}><summary><h3>${esc(g.names[p])}: secondaries</h3><span class="muted small">${ps.mode === "fixed" ? "Fixed" : "Tactical"}${sum ? " · " + esc(sum) : ""}</span></summary><div class="stack" style="margin-top:10px">
     <div class="seg" role="group" aria-label="Secondary mode"><button data-act="gmode" data-p="${p}" data-v="tactical" aria-pressed="${ps.mode==="tactical"}">Tactical</button><button data-act="gmode" data-p="${p}" data-v="fixed" aria-pressed="${ps.mode==="fixed"}">Fixed</button></div></div>
-    <div class="small muted modehelp">${ps.mode === "fixed" ? "<b>Fixed:</b> pick 2 cards before the game and keep them all game, scoring them every time you can." : "<b>Tactical:</b> draw 2 random cards each turn. Score or discard them, then draw back up to 2."} Each player chooses their own. Cards only show the rules for the way you're playing.</div>${body}</div>`;
+    <div class="small muted modehelp">${ps.mode === "fixed" ? "<b>Fixed:</b> pick 2 cards before the game and keep them all game, scoring them every time you can." : "<b>Tactical:</b> draw 2 random cards each turn. Score or discard them, then draw back up to 2."} Each player chooses their own. Cards only show the rules for the way you're playing.</div>${body}</div></details>`;
 }
 function viewGame(){
   const g = fixGame(S.game ||= blankGame());
@@ -2085,8 +2252,8 @@ function viewGame(){
   let setup;
   if (M) {
     const deps = depList(g), prims = primList(g), dep = deps.find(d => d.name === g.dep), pri = prims.find(c => c.name === g.pri), tw = M.twists.find(c => c.name === g.twist);
-    setup = `<div class="card stack">
-      <div class="row"><h3 class="grow">Mission</h3><button class="btn small primary" data-act="grandom">Random mission</button></div>
+    setup = `<details class="card foldcard"${keepOpen("g-mission")}><summary><h3>Mission</h3><span class="muted small">${esc([g.pri, g.dep].filter(Boolean).join(" · ") || "Not chosen yet")}</span></summary><div class="stack" style="margin-top:10px">
+      <div class="row"><span class="grow"></span><button class="btn small primary" data-act="grandom">Random mission</button></div>
       <div class="seg" role="group" aria-label="Game size">${SIZES_G.map(z => `<button data-act="gsize" data-v="${z}" aria-pressed="${g.size===z}">${z}</button>`).join("")}</div>
       ${g.size === "Strike Force" ? `<label class="f" for="gtp">Tournament mission (Chapter Approved pool)<select id="gtp" data-ch="gpool"><option value="">Choose A–T…</option>${M.tournamentPool.map(t => `<option value="${t.id}"${g.pri===t.primary&&g.dep===t.deployment?" selected":""}>${t.id}: ${esc(t.primary)} · ${esc(t.deployment)}</option>`).join("")}</select></label>` : ""}
       <div class="row">
@@ -2098,7 +2265,7 @@ function viewGame(){
       ${(() => { const pm = M.tournamentPool.find(t => t.primary === g.pri && t.deployment === g.dep && g.size === "Strike Force"); const ls = pm && M.layouts ? M.layouts.filter(x => new RegExp("\\b" + x.name + "\\b").test(pm.layouts)) : [];
         return ls.length ? `<div><div class="sec-h">Recommended terrain · ${ls.length}</div><div class="lgrid">${ls.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></div>` : ""; })()}
       ${cardHtml(pri, "Primary", true)}${cardHtml(tw, "Twist", false, g.ps[0].mode === g.ps[1].mode ? g.ps[0].mode : "")}
-    </div>
+    </div></details>
     ${secPanel(g, 0)}${secPanel(g, 1)}
     ${M.layouts ? `<details class="card"><summary><b>Terrain layouts</b> <span class="muted small">${M.layouts.length} from Chapter Approved</span></summary><div class="lgrid" style="margin-top:10px">${M.layouts.map(x => `<button class="lthumb" data-act="layout" data-n="${esc(x.name)}"><img src="${x.img}" alt="${esc(x.name)}"><span>${esc(x.name)}</span></button>`).join("")}</div></details>` : `<div class="small muted">Load the updated missions file to see terrain layouts.</div>`}
     <details class="card"><summary><b>Challenger cards</b> <span class="muted small">for the player behind on VP</span></summary><div class="stack" style="margin-top:10px">${M.challengers.map(challengerHtml).join("")}</div></details>`;
@@ -2119,19 +2286,19 @@ function viewGame(){
         <div class="stepper"><button data-act="gcp" data-p="${p}" data-d="-1" aria-label="Spend CP">−</button><span class="big num">${g.cp[p]}</span><button data-act="gcp" data-p="${p}" data-d="1" aria-label="Gain CP">+</button></div></div>`).join("")}
     </div>
     ${D ? gameDsHtml(g) : ""}
-    <div class="card">
-      <div class="sec-h">Victory points by round</div>
+    <details class="card foldcard"${keepOpen("g-vp")}><summary><h3>Victory points</h3><span class="muted small num">${gOrder(g).map(p => esc(g.names[p]) + " " + tot(p)).join(" · ")}</span></summary><div style="margin-top:10px">
       <div class="tracker">
         <span></span>${gOrder(g).map(p => `<span class="hd ${p === 0 ? "pl-me-t" : "pl-opp-t"}" data-pn="${p}">${esc(g.names[p])}${g.role ? `<small class="rolelab">${roleOf2(g, p)}</small>` : ""}</span>`).join("")}
         ${[0,1,2,3,4].map(r => `<span class="hd" style="text-align:left">R${r+1} primary</span>${gOrder(g).map(p => cell("vp",p,r)).join("")}<span class="hd" style="text-align:left">R${r+1} secondary</span>${gOrder(g).map(p => cell("sec",p,r)).join("")}`).join("")}
         <span class="hd tot-l" style="text-align:left">Total VP</span>${gOrder(g).map(p => `<span class="big num vptot ${p === 0 ? "pl-me-t" : "pl-opp-t"}" id="tot${p}">${tot(p)}</span>`).join("")}
       </div>
-    </div>
+    </div></details>
     <label class="f" for="gn">Game notes<textarea id="gn" data-in="gm" data-k="notes" placeholder="Things to remember">${esc(g.notes)}</textarea></label>
     <button class="btn primary" data-act="gfinish">${S.confirmFinish ? "Tap again to save this game to your history" : "Finish game and save result"}</button>
     ${S.history.length ? `<details class="card"><summary><b>Past games</b> <span class="muted small">${S.history.length}</span></summary><div class="stack" style="margin-top:8px">${S.history.map(h => `<div class="hrow"><span class="pill ${h.result === "w" ? "ok" : h.result === "l" ? "err" : ""}">${h.result === "w" ? "Win" : h.result === "l" ? "Loss" : "Draw"}</span><div class="grow"><b>${esc(h.listName)}</b> <span class="num">${h.score[0]}–${h.score[1]}</span><div class="small muted">vs ${esc(h.opp)}${h.mission ? " · " + esc(h.mission) : ""} · ${new Date(h.date).toLocaleDateString("en-NZ")}</div></div><button class="btn small" data-act="hcopy" data-id="${h.id}">Copy report</button><button class="iconbtn" data-act="hdel" data-id="${h.id}" aria-label="Delete this game">${SVG.trash}</button></div>`).join("")}
       ${S.history.length > 1 ? `<button class="btn small" data-act="hcopyall">Copy all game reports</button>` : ""}<div class="small muted">Copy a report to paste into Claude, Messages or your notes.</div></div></details>` : ""}
     <button class="btn danger" data-act="gnew">${S.confirmGame ? "Tap again to clear the tracker" : "New game"}</button>
+    ${g.role ? `<div class="turnbar ${g.turn === "me" ? "pl-me" : "pl-opp"}" role="region" aria-label="Current turn"><div class="tb-txt"><b>${turnName(g.turn === "me" ? g.names[0] : g.names[1])}</b><span>Round ${g.round} · ${PHASES[g.phase]} phase</span></div><button class="tb-next" data-act="gnext">Next →</button></div><div class="tb-space"></div>` : ""}
   </div>`;
 }
 function cardVPs(c, mode){
@@ -2276,7 +2443,7 @@ async function importFiles(files){
     try {
       const m = await readJsonFile(f);
       if (m.format === "listforge-backup") { msNote += importBackup(m) + " "; continue; }
-      if (m.format === "listforge-glossary") { m.importedAt = Date.now(); G = m; const js = JSON.stringify(m); IDB.set("gl", js); if (Cloud.ready) pushToCloud("gl", js, { importedAt:m.importedAt }); msNote += `Rules glossary loaded: ${Object.keys(m.weapon||{}).length} weapon abilities. `; continue; }
+      if (m.format === "listforge-glossary") { m.importedAt = Date.now(); G = m; const js = JSON.stringify(m); IDB.set("gl", js); if (Cloud.ready) pushToCloud("gl", js, { importedAt:m.importedAt }); msNote += `Rules glossary loaded: ${Object.keys(m.weapon||{}).length} weapon abilities and ${Object.keys(m.terms||{}).length} core rules. `; continue; }
       if (m.format !== "listforge-missions") throw new Error("not a missions file");
       m.importedAt = Date.now(); M = m; const js = JSON.stringify(m); IDB.set("ms", js);
       msNote = `Missions loaded: ${m.primaries.length} primaries, ${m.secondaries.length} secondaries, ${m.deployments.length} deployment maps. `;
@@ -2389,7 +2556,7 @@ document.addEventListener("click", e => {
   if (t.tagName === "A") e.preventDefault();
   const U = () => l && l.units.find(u => u.uid === t.dataset.u);
   switch (act) {
-    case "nav": S.view = t.dataset.v; LS.set("view", S.view); S.confirmDel = null; S.confirmGame = false; $("#main").scrollTop = 0; render(); break;
+    case "nav": S.view = t.dataset.v; LS.set("view", S.view); S.confirmDel = null; S.confirmGame = false; render(); window.scrollTo(0, 0); break;
     case "newlist": newList(S.newArmy || "SM:BLOOD ANGELS"); S.view = "build"; LS.set("view","build"); render(); break;
     case "ldelask": S.askDel = t.dataset.id; render(); break;
     case "ldelno": S.askDel = null; render(); break;
@@ -2423,8 +2590,8 @@ document.addEventListener("click", e => {
       { const anc = t.closest("#armyres") ? "#armyres" : "#addres", before = $(anc)?.getBoundingClientRect().top;
         renderPickResults(); render();
         /* keep the open add list exactly where it was, so the next tap lands on the same spot */
-        const ar = $(anc), m = $("main");
-        if (ar && m && before != null) m.scrollTop += ar.getBoundingClientRect().top - before; }
+        const ar = $(anc);
+        if (ar && before != null) window.scrollBy(0, ar.getBoundingClientRect().top - before); }
       break;
     }
     case "rmunit": { const u = U(); if (!u) break; l.units = l.units.filter(x => x !== u); l.units.forEach(x => { if (x.lead === u.uid) x.lead = null; }); saveList(l); render(); break; }
@@ -2543,6 +2710,8 @@ document.addEventListener("click", e => {
       if (c.m === start && c.w === W) delete g.track[k]; else g.track[k] = c;
       saveGame(); render(); break;
     }
+    case "calcopen": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.side }); const g = S.game || {}; const tg = t.dataset.side === "me" ? g.tgt : g.tgtOpp; if (tg) S.calc.target = tg; openCalc(); break; }
+    case "calcside": { S.calc = Object.assign(S.calc || {}, { side: t.dataset.v, unit:null, weapon:null, target:null, firing:null }); openCalc(); break; }
     case "grole": { const g = fixGame(S.game ||= blankGame()); g.role = t.dataset.v;
       if (g.role) { if (g.round === 1 && g.phase === 0) { g.turn = g.role === "att" ? "me" : "opp"; g.firstTurn = g.turn;
         /* the game starts in the first Command phase, where both players gain 1CP (only once) */
@@ -2560,7 +2729,7 @@ document.addEventListener("click", e => {
         g.turn = g.turn === "me" ? "opp" : "me";
         g.cp = g.cp.map(c => c + 1); toast("Command phase: both players gain 1CP");
       }
-      saveGame(); render(); $("#main").scrollTop = 0; break;
+      saveGame(); render(); if (!t.closest(".turnbar")) window.scrollTo(0, 0); break;
     }
     case "gnew": if (!S.confirmGame) { S.confirmGame = true; render(); break; } S.game = blankGame(); S.confirmGame = false; saveGame(); render(); break;
   }
@@ -2575,6 +2744,7 @@ document.addEventListener("input", e => {
   else if (k === "collq") { S.collQ = t.value; renderCollection(); }
   else if (k === "pickq") { S.pickQ = t.value; renderPickResults(); }
   else if (k === "shareopt" && t.type !== "checkbox") { S.shareOpt = Object.assign(shareOpts(), { [t.dataset.k]: t.value }); LS.set("shareOpt", S.shareOpt); clearTimeout(S.shT); S.shT = setTimeout(() => { const l2 = curList(); if (!l2) return; const txt = exportText(l2, S.shareFmt); const parts = shareOpts().discord ? splitDiscord(txt) : [txt]; if (parts.length === (S.shareParts||[]).length) { S.shareParts = parts; parts.forEach((p2, i) => { const ta = $("#sharetext" + (i ? i : "")); if (ta) ta.value = p2; }); } else { S.shareOptsOpen = true; shareList(); } }, 300); return; }
+  else if (k === "coreq") { S.coreQ = t.value; ["#coreres", "#gcoreres"].forEach(id => { const el = $(id); if (el) el.innerHTML = coreRefHtml(t.value); }); }
   else if (k === "armyq") { S.armyQ = t.value; const el = $("#armyres"); if (el && l) el.innerHTML = armyResHtml(l); }
   else if (k === "siteurl") { S.settings.siteUrl = t.value.trim(); LS.set("settings", S.settings); clearTimeout(S.qrT); S.qrT = setTimeout(renderShareQR, 600); }
   else if (k === "addq") { S.addQ = t.value; const r = searchIds(curList().army, t.value, S.addOpen); $("#addres").innerHTML = dsRows(r.ids, true, r.hints); }
@@ -2603,6 +2773,8 @@ document.addEventListener("change", e => {
     const v = k === "uwg" ? +t.value : (t.checked ? 1 : 0);
     if (v) u.wg[t.dataset.line] = v; else delete u.wg[t.dataset.line];
   }
+  else if (k === "calc") { const c = S.calc ||= {}; c[t.dataset.k] = t.type === "checkbox" ? t.checked : t.value; if (t.dataset.k === "unit") { c.weapon = null; c.firing = null; } openCalc(); return; }
+  else if (k === "gtgt") { const g = fixGame(S.game ||= blankGame()); if (t.dataset.side === "me") g.tgt = t.value; else g.tgtOpp = t.value; saveGame(); render(); return; }
   else if (k === "gpick") {
     const g = fixGame(S.game ||= blankGame()), ps = g.ps[+t.dataset.p], n = t.value; if (!n) return;
     if (!ps.deck.length && !ps.active.length && !ps.done.length && !ps.gone.length) ps.deck = shuffle(M.secondaries.map(c => c.name));
