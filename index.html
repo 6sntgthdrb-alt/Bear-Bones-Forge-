@@ -2008,7 +2008,7 @@ function closeDsPage(fromSwipe){ const m = $("#main"), y = S.dsReturn || 0, back
   if (fromSwipe) { m.style.transition = "transform .16s ease-in, opacity .16s"; m.style.transform = "translateX(60%)"; m.style.opacity = "0"; setTimeout(back, 150); } else back(); }
 function dsPageHtml(l){
   const u = l.units.find(x => x.uid === S.dsPage), d = D.ds[u.ds], v = validate(l);
-  const had = S.open.has(u.uid); S.open.add(u.uid); const card = unitCard(l, u, v); if (!had) S.open.delete(u.uid);
+  const had = S.open.has(u.uid); S.open.add(u.uid); S.inDsPage = true; let card; try { card = unitCard(l, u, v); } finally { S.inDsPage = false; } if (!had) S.open.delete(u.uid);
   const role = groupOf(u.ds, l.army);
   return `<div class="dspage">
     <div class="dsp-h"><button class="iconbtn dsp-back" data-act="dsback" aria-label="Back to the list">${SVG.back || "‹"}</button>
@@ -2311,8 +2311,9 @@ function foldDs(html){
   t.content.querySelectorAll(".sec-h").forEach(h => {
     const box = h.parentElement;
     if (!box || box.tagName !== "DIV" || box.className || box.firstElementChild !== h) return;
-    const title = h.textContent.trim(), k = "ds-" + lc(title).replace(/[^a-z]+/g, "-").replace(/-?\d.*$/, "");
-    const d = document.createElement("details"); d.className = "dsfold"; d.dataset.keep = k; if (S.keep[k] === true) d.open = true;
+    const title = h.textContent.trim(); let k = "ds-" + lc(title).replace(/[^a-z]+/g, "-").replace(/-?\d.*$/, "");
+    const d = document.createElement("details"); d.className = "dsfold"; if (S.inDsPage) { k = "p" + k; if (S.keep[k] !== false) d.open = true; } else if (S.keep[k] === true) d.open = true;
+    d.dataset.keep = k;
     const sm = document.createElement("summary"); sm.className = "sec-h"; sm.textContent = title; d.appendChild(sm);
     h.remove(); while (box.firstChild) d.appendChild(box.firstChild); box.replaceWith(d);
   });
