@@ -875,6 +875,19 @@ nav.tabs.scrubbing .tabind::before{width:70%;height:4px}
 #accv::-moz-range-thumb{width:22px;height:30px;border-radius:10px;background:#fff;border:0}
 [data-style="clean"] .dspage .unit{border:0;background:none;box-shadow:none;border-radius:0}
 [data-style="clean"] .unit-edit > summary{font:600 .78rem var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--acc-text,var(--accent));border-bottom:1px solid var(--line)}
+/* Unit page: nothing on screen but the unit */
+body.dsmode header.top,body.dsmode nav.tabs,body.dsmode .toast{display:none !important}
+body.dsmode main{padding-top:calc(env(safe-area-inset-top) + 8px);padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+body.dsmode .dsp-h{position:sticky;top:0;z-index:4;background:var(--bg);margin:0 -16px;padding:calc(env(safe-area-inset-top) + 8px) 16px 12px;margin-top:calc(-1 * (env(safe-area-inset-top) + 8px))}
+.dspage .unit-b{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px !important}
+[data-style="clean"] .dspage .unit-b{background:var(--panel);border:1px solid var(--line)}
+.dspage .unit-ds{margin:0 0 6px}
+.dspage .unit-b > .row{margin-top:10px}
+/* Scroll bars: hidden on touch screens, hairline on desktop */
+@media (hover:none),(pointer:coarse){html,body,*{scrollbar-width:none !important;-ms-overflow-style:none}
+::-webkit-scrollbar{display:none !important;width:0 !important;height:0 !important;background:transparent}}
+@media (hover:hover) and (pointer:fine){html,*{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--muted) 40%,transparent) transparent}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--muted) 40%,transparent);border-radius:6px}::-webkit-scrollbar-track{background:transparent}}
 </style>
 </head>
 <body data-army="">
@@ -1921,6 +1934,7 @@ function render(){
   const m = $("#main"); const st = window.scrollY;
   m.innerHTML = ({ lists:viewLists, build:viewBuild, rules:viewRules, game:viewGame, data:viewData }[S.view] || viewLists)();
   window.scrollTo(0, st);
+  document.body.classList.toggle("dsmode", S.view === "build" && !!S.dsPage);
   fitStats(m); measureBars(); if (S.view === "rules") showRTab(false, true); if (S.view === "data") drawAccWheel();
 }
 function measureBars(){ const t = $("#top"), n = document.querySelector("nav.tabs"); const r = document.documentElement.style;
