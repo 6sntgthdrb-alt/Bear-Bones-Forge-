@@ -787,10 +787,11 @@ function armyOptions(){
 const WAHA = "https://wahapedia.ru/wh40k10ed/";
 const FILES = ["Factions","Source","Datasheets","Datasheets_abilities","Datasheets_keywords","Datasheets_models","Datasheets_options","Datasheets_wargear","Datasheets_unit_composition","Datasheets_models_cost","Datasheets_stratagems","Datasheets_enhancements","Datasheets_detachment_abilities","Datasheets_leader","Stratagems","Abilities","Enhancements","Detachment_abilities","Detachments","Last_update"];
 const REQUIRED = ["factions","datasheets","datasheets_models_cost","datasheets_keywords"];
-const ROLE_ORDER = ["Epic Heroes","Characters","Battleline","Infantry","Mounted","Beasts & Swarms","Walkers","Monsters","Vehicles","Dedicated Transports","Fortifications","Other units"];
+const ROLE_ORDER = ["Epic Heroes","Characters","Battleline","Infantry","Mounted","Beasts & Swarms","Walkers","Monsters","Vehicles","Dedicated Transports","Fortifications","Other units","Imperial Agents"];
+const groupOf = (id, army) => isAlly(id, army) ? "Imperial Agents" : roleOf(id);
 const catLabel = (g, army) => g === "Walkers" && fidOf(army) === "SM" ? "Dreadnoughts" : g;
 const catOne = (g, army) => g === "Walkers" && fidOf(army) === "SM" ? "Dreadnought" : (ROLE_ONE[g] || "unit");
-const ROLE_ONE = {"Epic Heroes":"Epic Hero","Characters":"Character","Battleline":"Battleline unit","Infantry":"Infantry unit","Mounted":"Mounted unit","Walkers":"Walker","Monsters":"Monster","Beasts & Swarms":"unit","Vehicles":"Vehicle","Dedicated Transports":"Dedicated Transport","Fortifications":"Fortification","Other units":"unit"};
+const ROLE_ONE = {"Epic Heroes":"Epic Hero","Characters":"Character","Battleline":"Battleline unit","Infantry":"Infantry unit","Mounted":"Mounted unit","Walkers":"Walker","Monsters":"Monster","Beasts & Swarms":"unit","Vehicles":"Vehicle","Dedicated Transports":"Dedicated Transport","Fortifications":"Fortification","Imperial Agents":"Imperial Agent","Other units":"unit"};
 
 /* ============ helpers ============ */
 const $ = (s, el=document) => el.querySelector(s);
@@ -972,18 +973,25 @@ function roleOf(id){
   if (k.has("INFANTRY")) return "Infantry";
   return "Other units";
 }
+const IMPERIUM_F = new Set(["SM","AM","AS","AC","AdM","QI","GK"]);
+const isAlly = (id, army) => { const d = D.ds[id]; return !!d && d.faction_id === "AoI" && fidOf(army) !== "AoI" && IMPERIUM_F.has(fidOf(army)); };
 function eligible(id, army){
   const d = D.ds[id]; if (!d) return false;
-  if (d.faction_id !== fidOf(army)) return false;
+  if (d.faction_id !== fidOf(army) && !isAlly(id, army)) return false;
   if (String(d.virtual).toLowerCase() === "true") return false;
   if (!S.settings.legends && isLegends(id)) return false;
-  if (fidOf(army) === "SM") {
+  if (fidOf(army) === "SM" && d.faction_id === "SM") {
     const k = D.kwSet[id] || new Set(), mine = chapterOf(army);
     if (mine ? (!k.has(mine) && CHAPTERS.some(c => c !== mine && k.has(c))) : CHAPTERS.some(c => k.has(c))) return false;
   }
   return true;
 }
-const costRows = id => (D.cost[id]||[]).filter(r => !/^\s*\+/.test(r.cost)).map(r => ({ line:r.line, label:r.description, cost:num(r.cost) }));
+let costCtx = null; /* the army whose prices apply; Agents of the Imperium cost more as allies */
+const costRows = id => { let rows = (D.cost[id]||[]).filter(r => !/^\s*\+/.test(r.cost));
+  if (rows.some(r => /assigned agent/i.test(r.description)) && rows.some(r => /detachment\)/i.test(r.description))) {
+    const army = costCtx || (curList() && curList().army) || "", pure = fidOf(army) === "AoI";
+    rows = rows.filter(r => pure ? !/assigned agent/i.test(r.description) : /assigned agent/i.test(r.description)); }
+  return rows.map(r => ({ line:r.line, label:r.description.replace(/\s*\((<ky>)?AGENTS OF THE IMPERIUM(<\/ky>)? Detachment\)|\s*\(Assigned Agent\)/i, ""), cost:num(r.cost) })); };
 /* Optional extra models priced as "+N" (e.g. Bike Squad + Attack Bike) are add-ons, not unit sizes. */
 const addonRows = id => (D.cost[id]||[]).filter(r => /^\s*\+/.test(r.cost)).map(r => ({ line:r.line, label:r.description, cost:num(r.cost) }));
 const addonsOf = u => addonRows(u.ds).filter(a => u.addons && u.addons[a.line]);
@@ -1419,7 +1427,22 @@ function unitLabel(l, u){
   const nm = D?.ds[u.ds]?.name || u.name || "Unknown unit";
   return same.length > 1 ? `${nm} #${same.indexOf(u)+1}` : nm;
 }
-function validate(l){
+function validate(l){ const prev = costCtx; costCtx = l.army; try { return validate0(l); } finally { costCtx = prev; } }
+function agentsCheck(l, bad){
+  const al = l.units.filter(u => isAlly(u.ds, l.army)); if (!al.length) return;
+  const size = l.points <= 1000 ? 0 : l.points <= 2000 ? 1 : 2, name = ["Incursion","Strike Force","Onslaught"][size];
+  const cap = { CHARACTER:[1,2,3][size], RETINUE:[1,2,3][size], REQUISITIONED:[1,1,2][size] };
+  const has = (u, k) => (D.kwSet[u.ds] || new Set()).has(k);
+  const inq = al.filter(u => has(u, "INQUISITOR")).length;
+  let freeAgents = inq;
+  const n = { CHARACTER:0, RETINUE:0, REQUISITIONED:0 };
+  al.forEach(u => { if (has(u, "DEDICATED TRANSPORT")) return;
+    if (has(u, "INQUISITORIAL AGENTS") && freeAgents > 0) { freeAgents--; return; }
+    if (has(u, "CHARACTER")) n.CHARACTER++; else if (has(u, "REQUISITIONED")) n.REQUISITIONED++; else if (has(u, "RETINUE")) n.RETINUE++; });
+  Object.entries(n).forEach(([k, v]) => { if (v > cap[k]) bad(null, `Assigned Agents: ${v} ${k.toLowerCase()} unit${v === 1 ? "" : "s"}, but ${name} allows ${cap[k]}.`); });
+  if (al.some(u => has(u, "DEDICATED TRANSPORT"))) bad(null, "Assigned Agents transports must start the battle with a unit embarked, or they count as destroyed.", false);
+}
+function validate0(l){
   const res = { total:0, errors:[], warnings:[], unitErr:{} };
   if (!D) return res;
   const bad = (u, msg, err=true) => { (err ? res.errors : res.warnings).push(msg); if (u && err) res.unitErr[u.uid] = true; };
@@ -1469,6 +1492,7 @@ function validate(l){
     const tgt = l.units.find(x => x.uid === t);
     res.warnings.push(`${unitLabel(l,tgt)} has ${leaders[t].length} Leaders attached. Only some datasheets allow this, so check their Leader rules.`);
   }
+  agentsCheck(l, bad);
   return res;
 }
 function listText(l){
@@ -1478,7 +1502,7 @@ function listText(l){
   out.push(`${armyName(l.army, l)}${l.det ? " · " + l.det.name : ""}`);
   out.push(`${sz ? sz.name + " " : ""}(${l.points} pts) · ${v.total} pts used`);
   const groups = {};
-  l.units.forEach(u => (groups[D.ds[u.ds] ? roleOf(u.ds) : "Other units"] ||= []).push(u));
+  l.units.forEach(u => (groups[D.ds[u.ds] ? groupOf(u.ds, l.army) : "Other units"] ||= []).push(u));
   ROLE_ORDER.forEach(g => {
     if (!groups[g]) return;
     out.push("", catLabel(g, l.army).toUpperCase());
@@ -1784,10 +1808,10 @@ function viewBuild(){
   const v = validate(l);
   const dets = detachmentsFor(l.army);
   const groups = {};
-  l.units.forEach(u => (groups[D.ds[u.ds] ? roleOf(u.ds) : "Other units"] ||= []).push(u));
+  l.units.forEach(u => (groups[D.ds[u.ds] ? groupOf(u.ds, l.army) : "Other units"] ||= []).push(u));
   const issues = [...v.errors.map(e => `<div class="issue err">${esc(e)}</div>`), ...v.warnings.map(w => `<div class="issue">${esc(w)}</div>`)].join("");
   const avail = {};
-  Object.keys(D.ds).filter(id => eligible(id, l.army)).forEach(id => (avail[roleOf(id)] ||= []).push(id));
+  Object.keys(D.ds).filter(id => eligible(id, l.army)).forEach(id => (avail[groupOf(id, l.army)] ||= []).push(id));
   const unitsHtml = ROLE_ORDER.filter(g => groups[g] || avail[g]).map(g => {
     const mine = groups[g] || [];
     const pts = mine.reduce((a,u) => a + unitCost(u) + enhCost(u), 0);
@@ -1796,8 +1820,8 @@ function viewBuild(){
     const q = (S.addQ || "").toLowerCase().trim();
     const sr = open ? searchIds(l.army, q, g) : { ids:[], hints:{} };
     const shown = sr.ids;
-    return `<details class="sect sectfold" aria-label="${esc(g)}"${keepOpen("b-" + g)}>
-      <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3><span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
+    return `<details class="sect sectfold${g === "Imperial Agents" ? " allysect" : ""}" aria-label="${esc(g)}"${g === "Imperial Agents" && !mine.length ? keepAttr("b-" + g) : keepOpen("b-" + g)}>
+      <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3>${g === "Imperial Agents" ? `<span class="muted small">Allies</span>` : ""}<span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
       ${mine.map(u => unitCard(l, u, v)).join("")}
       ${ids.length ? `<button class="addbtn" data-act="addopen" data-v="${esc(g)}" aria-expanded="${open}">${open ? SVG.down : "+"} Add ${esc(catOne(g, l.army))}<span class="muted small">${ids.length} available</span></button>` : ""}
       ${open ? `<div class="adddrop">${ids.length > 8 ? `<input type="search" id="addq" data-in="addq" placeholder="Search by name or ability" value="${esc(S.addQ||"")}" aria-label="Search ${esc(g)}">` : ""}<div id="addres">${dsRows(shown, true, sr.hints)}</div></div>` : ""}
@@ -1944,7 +1968,7 @@ function viewRules(){
   const l = curList();
   const army = l ? l.army : S.rulesArmy;
   const det = l ? l.det : null;
-  const tabs = [["core","Core rules"],["brief","🧭 Briefing"],["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
+  const tabs = [["core","Core rules"],["brief","Briefing"],["army","Army"],["det","Detachment"],["strat","Stratagems"],["units","Datasheets"],["marks","★ Saved"]];
   const mine = l && S.rulesMine !== false;
   let body = "";
   if (S.rulesTab === "brief") {
@@ -2001,7 +2025,7 @@ function dsMatch(id, q){
 }
 function searchIds(army, q, role){
   q = lc(q).trim(); const hints = {};
-  const ids = Object.keys(D.ds).filter(id => eligible(id, army) && (!role || roleOf(id) === role)).filter(id => { const m = dsMatch(id, q); if (m === null) return false; if (m) hints[id] = m; return true; })
+  const ids = Object.keys(D.ds).filter(id => eligible(id, army) && (!role || groupOf(id, army) === role)).filter(id => { const m = dsMatch(id, q); if (m === null) return false; if (m) hints[id] = m; return true; })
     .sort((a,b) => (!!hints[a] - !!hints[b]) || D.ds[a].name.localeCompare(D.ds[b].name));
   return { ids, hints };
 }
@@ -3481,7 +3505,7 @@ function briefingHtml(l){
     return `<details class="srow brow"><summary><span class="sname">${label(u)}${lead}</span><span></span><span class="tags"><span class="abwho">M ${mv ? mv + '"' : "–"}${mv ? ` · charge ≈${mv + 7}"` : ""}</span></span></summary>
       <div class="bgrid">${rng.length ? `<div><div class="bh">Guns</div>${rng.join("")}</div>` : ""}${dist.length ? `<div><div class="bh">Ability ranges</div>${dist.join("")}</div>` : ""}${!rng.length && !dist.length ? `<div class="small muted">Melee only, no ranges to measure. Charge reach is Move + 2D6 (7" on average, 12" at most).</div>` : ""}</div></details>`;
   }).join("");
-  const measure = fold("measure", "📏 Pre-measure", `Longest gun ${longest}" · tap a unit`, `<div class="small muted">Move, guns and any distances written in a unit's abilities. Charge reach is Move plus the 7" average charge roll.</div>${rows}`);
+  const measure = fold("measure", "Pre-measure", `Longest gun ${longest}" · tap a unit`, `<div class="small muted">Move, guns and any distances written in a unit's abilities. Charge reach is Move plus the 7" average charge roll.</div>${rows}`);
   // 2. before the game
   const pre = [];
   const hasAb = (u, rx) => abOf(u).find(a => rx.test(a.name));
@@ -3493,22 +3517,22 @@ function briefingHtml(l){
     if (u.warlord) tags.push("Warlord");
     if (tags.length) pre.push(`<div class="brow2"><b>${label(u)}</b><div class="small">${tags.map(t => `<span class="pill">${t}</span>`).join(" ")}</div></div>`);
   });
-  const before = fold("pre", "🚀 Before the game", `${pre.length} unit${pre.length === 1 ? "" : "s"} with deployment notes`, pre.join("") || `<div class="small muted">Nothing special to set up. Everything deploys normally.</div>`);
+  const before = fold("pre", "Before the game", `${pre.length} unit${pre.length === 1 ? "" : "s"} with deployment notes`, pre.join("") || `<div class="small muted">Nothing special to set up. Everything deploys normally.</div>`);
   // 3. phase reminders
   const ph = PHASES.map(p => { const ab = abilitiesNow(l, p); return `<details class="dsub"><summary>${p} · ${ab.length}</summary>${ab.length ? ab.map(a => `<details class="srow"><summary><span class="sname">${esc(a.name)}</span><span></span><span class="tags"><span class="abwho">${esc(a.who)}</span></span></summary><div class="rich">${sanitize(a.html)}</div></details>`).join("") : `<div class="small muted">Nothing extra this phase.</div>`}</details>`; }).join("");
-  const phases = fold("phase", "⏱️ Phase reminders", "What your army does in each phase", ph);
+  const phases = fold("phase", "Phase reminders", "What your army does in each phase", ph);
   // 4. once per battle / limited uses
   const used = (S.used ||= LS.get("used", {}))[l.id] || {}, once = [], seenO = new Set();
   const addOnce = (name, who, text) => { const m = text.match(/once per (battle round|battle|turn|phase)/i); if (!m) return; const k = (name + "|" + who).replace(/\W+/g, "_"); if (seenO.has(k)) return; seenO.add(k);
     once.push(`<label class="check bonce${used[k] ? " used" : ""}"><input type="checkbox" data-ch="bused" data-k="${k}"${used[k] ? " checked" : ""}><span><b>${esc(name)}</b> <span class="muted small">· ${esc(who)} · once per ${esc(m[1].toLowerCase())}</span></span></label>`); };
   units.forEach(u => { abOf(u).forEach(a => { if (!/faction/i.test(a.type)) addOnce(a.name, D.ds[u.ds].name, a.text); }); const e = u.enh && D.enhById[u.enh]; if (e) addOnce(e.name, unitLabel(l, u), plain(e.description || "")); });
   if (l.det) detRules(l.army, l.det).forEach(r => addOnce(r.name, "Detachment", plain(r.description || "")));
-  const onceBox = fold("once", "☝️ Limited uses", `${once.length} to track · tick when used`, once.length ? once.join("") + `<button class="btn small" data-act="busedreset">Reset for a new game</button>` : `<div class="small muted">No once-per-battle abilities in this list.</div>`);
+  const onceBox = fold("once", "Limited uses", `${once.length} to track · tick when used`, once.length ? once.join("") + `<button class="btn small" data-act="busedreset">Reset for a new game</button>` : `<div class="small muted">No once-per-battle abilities in this list.</div>`);
   // 5. weapon rules worth remembering
   const KW = [["hazardous","Hazardous","roll a D6 per weapon after attacking; on a 1 a model is destroyed (or takes 3 mortal wounds)"],["precision","Precision","can pick out an attached Character"],["indirect fire","Indirect Fire","can shoot without line of sight (−1 to hit, target gets cover)"],["one shot","One Shot","fires once per battle"],["pistol","Pistol","can shoot while in Engagement Range"],["assault","Assault","can shoot after Advancing"],["lance","Lance","+1 to wound on the charge"],["melta","Melta","extra damage at half range"],["blast","Blast","+1 attack per 5 models in the target; not into Engagement Range"],["extra attacks","Extra Attacks","used on top of another melee weapon"],["psychic","Psychic","psychic attack"],["lethal hits","Lethal Hits","6s to hit auto-wound"],["sustained hits","Sustained Hits","6s to hit score extra hits"],["devastating wounds","Devastating Wounds","6s to wound skip saves"],["anti-","Anti-","critical wounds on a lower roll against a keyword"]];
   const kwRows = KW.map(([rx, name, tip]) => { const who = [...new Set(units.filter(u => groupWeapons({ members:[u] }).some(x => lc(plain(x.w.description || "")).includes(rx))).map(u => unitLabel(l, u)))];
     return who.length ? `<div class="brow2"><b>${name}</b> <span class="muted small">${tip}</span><div class="small">${who.map(esc).join(" · ")}</div></div>` : ""; }).join("");
-  const weaponsBox = fold("wkw", "⚔️ Weapon rules to remember", "Which units carry which special rules", kwRows || `<div class="small muted">No special weapon rules in this list.</div>`);
+  const weaponsBox = fold("wkw", "Weapon rules to remember", "Which units carry which special rules", kwRows || `<div class="small muted">No special weapon rules in this list.</div>`);
   return `<div class="small muted">A study of <b>${esc(l.name)}</b> with the wargear you picked.</div>${measure}${before}${onceBox}${phases}${weaponsBox}`;
 }
 function abilitiesNow(l, phase){
