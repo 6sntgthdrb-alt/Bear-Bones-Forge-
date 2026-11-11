@@ -719,6 +719,7 @@ details.sectfold{display:block}
 .sectfold > summary::-webkit-details-marker{display:none}
 .sectfold > summary::after{content:"▾";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--acc-text,var(--accent));transition:transform .2s}
 .sectfold:not([open]) > summary::after{transform:translateY(-50%) rotate(-90deg)}
+.allynote{margin:0 0 10px;line-height:1.45}
 .sectfold > summary.sect-h,[data-style="clean"] .sectfold > summary.sect-h{padding-right:30px !important}
 .sectfold > summary.sect-h > :last-child:not(h3){white-space:nowrap}
 .sect-b{display:flex;flex-direction:column;gap:8px;margin-top:8px}
@@ -950,8 +951,8 @@ function armyOptions(){
 const WAHA = "https://wahapedia.ru/wh40k10ed/";
 const FILES = ["Factions","Source","Datasheets","Datasheets_abilities","Datasheets_keywords","Datasheets_models","Datasheets_options","Datasheets_wargear","Datasheets_unit_composition","Datasheets_models_cost","Datasheets_stratagems","Datasheets_enhancements","Datasheets_detachment_abilities","Datasheets_leader","Stratagems","Abilities","Enhancements","Detachment_abilities","Detachments","Last_update"];
 const REQUIRED = ["factions","datasheets","datasheets_models_cost","datasheets_keywords"];
-const ROLE_ORDER = ["Epic Heroes","Characters","Battleline","Infantry","Mounted","Beasts & Swarms","Walkers","Monsters","Vehicles","Dedicated Transports","Fortifications","Other units","Imperial Agents"];
-const groupOf = (id, army) => isAlly(id, army) ? "Imperial Agents" : roleOf(id);
+const ROLE_ORDER = ["Epic Heroes","Characters","Battleline","Infantry","Mounted","Beasts & Swarms","Walkers","Monsters","Vehicles","Dedicated Transports","Fortifications","Other units","Imperial Agents","Freeblades","Dreadblades","Daemonic Pact","Brood Brothers","Tyranid Invaders","Shadow Legion","Forge World Allies","Wretched Thralls","Plague Legions","Legions of Excess","Scintillating Legions","Blood Legions","Corsairs & Harlequins","Ynnari"];
+const groupOf = (id, army) => { const r = allyOf(id, army); return r ? r.group : roleOf(id); };
 const catLabel = (g, army) => g === "Walkers" && fidOf(army) === "SM" ? "Dreadnoughts" : g;
 const catOne = (g, army) => g === "Walkers" && fidOf(army) === "SM" ? "Dreadnought" : (ROLE_ONE[g] || "unit");
 const ROLE_ONE = {"Epic Heroes":"Epic Hero","Characters":"Character","Battleline":"Battleline unit","Infantry":"Infantry unit","Mounted":"Mounted unit","Walkers":"Walker","Monsters":"Monster","Beasts & Swarms":"unit","Vehicles":"Vehicle","Dedicated Transports":"Dedicated Transport","Fortifications":"Fortification","Imperial Agents":"Imperial Agent","Other units":"unit"};
@@ -1106,6 +1107,8 @@ function buildIndex(raw){
   I.strat = raw.stratagems || []; I.detAb = raw.detachment_abilities || []; I.dets = raw.detachments || [];
   I.kwSet = {};
   for (const id in I.ds) I.kwSet[id] = new Set((I.kw[id]||[]).map(k => (k.keyword||"").toUpperCase().trim()));
+  I.fkSet = {};
+  for (const id in I.ds) I.fkSet[id] = new Set((I.kw[id]||[]).filter(k => String(k.is_faction_keyword).toLowerCase() === "true").map(k => (k.keyword||"").toUpperCase().trim()).filter(Boolean));
   return I;
 }
 function armyRules(army){
@@ -1136,11 +1139,56 @@ function roleOf(id){
   if (k.has("INFANTRY")) return "Infantry";
   return "Other units";
 }
-const IMPERIUM_F = new Set(["SM","AM","AS","AC","AdM","QI","GK"]);
-const isAlly = (id, army) => { const d = D.ds[id]; return !!d && d.faction_id === "AoI" && fidOf(army) !== "AoI" && IMPERIUM_F.has(fidOf(army)); };
+/* ============ Allies ============
+   Two kinds: units from another faction (Agents, Freeblades, Dreadblades, Daemonic Pact), and units filed under
+   your own faction that only a detachment or army rule unlocks (Brood Brothers, Shadow Legion, god daemons…). */
+const IMPERIUM_F = new Set(["SM","AM","AS","AC","AdM","QI","GK","AoI","TL"]);
+const CHAOS_F = new Set(["CSM","WE","DG","TS","EC","CD","QT"]);
+const hasFk = (id, k) => !!(D.fkSet && D.fkSet[id] && D.fkSet[id].has(k));
+const hasKw = (id, k) => !!(D.kwSet[id] && D.kwSet[id].has(k));
+const PTS_S = [250, 500, 750], PTS_L = [500, 1000, 1500];
+const SHADOW_OK = new Set(["CHAOS LORD","CHAOS LORD IN TERMINATOR ARMOUR","CHAOS LORD WITH JUMP PACK","CHAOS TERMINATOR SQUAD","CHOSEN","DARK APOSTLE","HAVOCS","LEGIONARIES","MASTER OF POSSESSION","POSSESSED","RAPTORS","SORCERER","SORCERER IN TERMINATOR ARMOUR","WARP TALONS"]);
+const BROOD_BAN = ["AIRCRAFT","COMMISSAR","EPIC HERO","MILITARUM TEMPESTUS","OGRYN","RATLING","TECH-PRIEST ENGINSEER","MINISTORUM PRIEST"];
+const ALLY_RULES = [
+  { group:"Imperial Agents", rule:"Assigned Agents", hosts:f => IMPERIUM_F.has(f) && f !== "AoI", unit:id => D.ds[id].faction_id === "AoI", agents:true },
+  { group:"Freeblades", rule:"Freeblades", hosts:f => IMPERIUM_F.has(f) && f !== "QI", unit:id => D.ds[id].faction_id === "QI" && (hasKw(id, "TITANIC") || hasKw(id, "ARMIGER")), knights:"ARMIGER", small:"Armiger", noWl:true, noEnh:true },
+  { group:"Dreadblades", rule:"Dreadblades", hosts:f => CHAOS_F.has(f) && f !== "QT", unit:id => D.ds[id].faction_id === "QT" && (hasKw(id, "TITANIC") || hasKw(id, "WAR DOG")), knights:"WAR DOG", small:"War Dog", noWl:true, noEnh:true },
+  { group:"Daemonic Pact", rule:"Daemonic Pact", hosts:f => f === "CSM" || f === "QT", unit:id => D.ds[id].faction_id === "CD" && !hasFk(id, "HERETIC ASTARTES"), pts:PTS_S, noWl:true, noEnh:true, gods:true },
+  { group:"Brood Brothers", rule:"Brood Brothers", own:true, hosts:f => f === "GC", unit:id => hasFk(id, "ASTRA MILITARUM"), ok:id => !BROOD_BAN.some(k => hasKw(id, k)), det:"Brood Brother Auxilia", pts:PTS_L, noWl:true, note:"Astra Militarum models lose Voice of Command. A Genestealer Cults model must be your Warlord." },
+  { group:"Tyranid Invaders", rule:"The Star Children's Blessings", own:true, hosts:f => f === "GC", unit:id => hasFk(id, "TYRANIDS"), ok:id => !hasKw(id, "AIRCRAFT"), det:"Final Day", pts:PTS_L, noWl:true },
+  { group:"Shadow Legion", rule:"Thralls of the First Prince", own:true, hosts:f => f === "CD", unit:id => hasFk(id, "HERETIC ASTARTES"), ok:id => SHADOW_OK.has(D.ds[id].name.toUpperCase()) || hasKw(id, "DAMNED"), det:"Shadow Legion", pts:PTS_L },
+  { group:"Forge World Allies", rule:"Forge World Allies", own:true, hosts:f => f === "QI", unit:id => hasFk(id, "ADEPTUS MECHANICUS"), det:"Questor Forgepact", pts:PTS_S, noWl:true },
+  { group:"Wretched Thralls", rule:"Wretched Thralls", own:true, hosts:f => f === "QT", unit:id => hasFk(id, "HERETIC ASTARTES"), det:"Iconoclast Fiefdom", pts:PTS_S, noWl:true },
+  { group:"Plague Legions", rule:"Plague Legions", own:true, hosts:f => f === "DG", unit:id => hasFk(id, "PLAGUE LEGIONS"), det:"Tallyband Summoners", pts:PTS_L, noWl:true },
+  { group:"Legions of Excess", rule:"Legions of Excess", own:true, hosts:f => f === "EC", unit:id => hasFk(id, "LEGIONS OF EXCESS"), det:"Carnival of Excess", pts:PTS_L, noWl:true },
+  { group:"Scintillating Legions", rule:"Scintillating Legions", own:true, hosts:f => f === "TS", unit:id => hasFk(id, "SCINTILLATING LEGIONS"), det:"Changehost of Deceit", pts:PTS_L, noWl:true },
+  { group:"Blood Legions", rule:"Blood Legions", own:true, hosts:f => f === "WE", unit:id => hasFk(id, "BLOOD LEGIONS"), det:"Khorne Daemonkin", pts:PTS_L, noWl:true },
+  { group:"Corsairs & Harlequins", rule:"Corsairs and Travelling Players", own:true, hosts:f => f === "DRU", unit:id => hasFk(id, "HARLEQUINS") || hasFk(id, "ASURYANI") || hasFk(id, "AELDARI"), pts:PTS_S, noWl:true, noEnh:true, wager:true },
+  { group:"Ynnari", rule:"Servants of the Whispering God", own:true, hosts:f => f === "AE", unit:id => hasFk(id, "YNNARI"), det:"Devoted of Ynnead" },
+];
+const ALLY_GROUPS = new Set(ALLY_RULES.map(r => r.group));
+const allyOf = (id, army) => { const d = D.ds[id]; if (!d) return null; const f = fidOf(army);
+  for (const r of ALLY_RULES) if (r.hosts(f) && (!r.own || d.faction_id === f) && r.unit(id)) return r; return null; };
+const isAlly = (id, army) => { const r = allyOf(id, army); return !!r && !!r.agents; };
+/* Reaper's Wager swaps the Drukhari army rule: Harlequins only, with a bigger points allowance. */
+const allyLimits = (r, l) => { if (r.wager && l && l.det && /reaper/i.test(l.det.name)) return { ...r, pts:PTS_L, noEnh:false, harlequinsOnly:true, rule:"Reaper's Wager" }; return r; };
+const sizeIx = l => l.points <= 1000 ? 0 : l.points <= 2000 ? 1 : 2;
+const SIZE_NAMES = ["Incursion","Strike Force","Onslaught"];
+function allyNote(r, l){ r = allyLimits(r, l); const sz = sizeIx(l), bits = [];
+  if (r.det && !(l.det && l.det.name === r.det)) bits.push(`Needs the ${r.det} detachment.`);
+  if (r.agents) bits.push(`${SIZE_NAMES[sz]}: up to ${[1,2,3][sz]} Character, ${[1,2,3][sz]} Retinue and ${[1,1,2][sz]} Requisitioned units.`);
+  if (r.knights) bits.push(`Either 1 Titanic model or up to 3 ${r.small} models.`);
+  if (r.pts) bits.push(`Up to ${r.pts[sz]} pts at ${SIZE_NAMES[sz]}.`);
+  if (r.gods) bits.push("For each god, no more non-Battleline units than Battleline ones.");
+  if (r.harlequinsOnly) bits.push("Harlequins only (no Corsairs) with this detachment.");
+  if (r.noWl && r.noEnh) bits.push("Can't be your Warlord or take Enhancements."); else if (r.noWl) bits.push("Can't be your Warlord.");
+  if (r.note) bits.push(r.note);
+  return `${r.rule}: ${bits.join(" ")}`; }
 function eligible(id, army){
   const d = D.ds[id]; if (!d) return false;
-  if (d.faction_id !== fidOf(army) && !isAlly(id, army)) return false;
+  const ar = allyOf(id, army);
+  if (d.faction_id !== fidOf(army) && !ar) return false;
+  if (ar && ar.ok && !ar.ok(id)) return false;
   if (String(d.virtual).toLowerCase() === "true") return false;
   if (!S.settings.legends && isLegends(id)) return false;
   if (fidOf(army) === "SM" && d.faction_id === "SM") {
@@ -1605,6 +1653,27 @@ function agentsCheck(l, bad){
   Object.entries(n).forEach(([k, v]) => { if (v > cap[k]) bad(null, `Assigned Agents: ${v} ${k.toLowerCase()} unit${v === 1 ? "" : "s"}, but ${name} allows ${cap[k]}.`); });
   if (al.some(u => has(u, "DEDICATED TRANSPORT"))) bad(null, "Assigned Agents transports must start the battle with a unit embarked, or they count as destroyed.", false);
 }
+function alliesCheck(l, bad){
+  const by = new Map();
+  l.units.forEach(u => { if (!D.ds[u.ds]) return; const r = allyOf(u.ds, l.army); if (r) (by.get(r) || by.set(r, []).get(r)).push(u); });
+  const sz = sizeIx(l);
+  by.forEach((us, r0) => { const r = allyLimits(r0, l);
+    if (r.det && !(l.det && l.det.name === r.det)) us.forEach(u => bad(u, `${unitLabel(l,u)} can only be taken with the ${r.det} detachment.`));
+    if (r.harlequinsOnly) us.filter(u => !hasFk(u.ds, "HARLEQUINS")).forEach(u => bad(u, `${unitLabel(l,u)}: Reaper's Wager armies can't include Corsairs.`));
+    if (r.pts) { const pts = us.reduce((a,u) => a + unitCost(u) + enhCost(u), 0);
+      if (pts > r.pts[sz]) bad(null, `${r.rule}: ${pts} pts of ${r.group}, but ${SIZE_NAMES[sz]} allows up to ${r.pts[sz]} pts.`); }
+    if (r.knights) { const tit = us.filter(u => hasKw(u.ds, "TITANIC")), sm = us.filter(u => hasKw(u.ds, r.knights)), smN = sm.reduce((a,u) => a + unitModels(u), 0);
+      if (tit.length && sm.length) bad(null, `${r.rule}: take either 1 Titanic model or up to 3 ${r.small} models, not both.`);
+      else if (tit.length > 1) bad(null, `${r.rule}: only 1 Titanic model is allowed, you have ${tit.length}.`);
+      else if (smN > 3) bad(null, `${r.rule}: up to 3 ${r.small} models are allowed, you have ${smN}.`); }
+    if (r.gods) ["KHORNE","TZEENTCH","NURGLE","SLAANESH"].forEach(g => { const gu = us.filter(u => hasKw(u.ds, g)), bl = gu.filter(u => hasKw(u.ds, "BATTLELINE")).length, other = gu.length - bl;
+      if (other > bl) bad(null, `${r.rule}: ${other} non-Battleline ${g[0] + g.slice(1).toLowerCase()} unit${other === 1 ? "" : "s"} but only ${bl} Battleline. You need at least as many Battleline units for each god.`); });
+    if (r.noWl) us.filter(u => u.warlord).forEach(u => bad(u, `${unitLabel(l,u)} is an ally (${r.rule}), so it can't be your Warlord.`));
+    if (r.noEnh) us.filter(u => u.enh).forEach(u => bad(u, `${unitLabel(l,u)} is an ally (${r.rule}), so it can't take an Enhancement.`));
+  });
+  if (fidOf(l.army) === "CD" && l.det && l.det.name === "Shadow Legion")
+    l.units.forEach(u => { const d = D.ds[u.ds]; if (!d) return; if (/^daemon prince/i.test(d.name) || (hasKw(u.ds, "EPIC HERO") && !/^be.lakor/i.test(d.name))) bad(u, `${unitLabel(l,u)} can't be taken in a Shadow Legion army.`); });
+}
 function validate0(l){
   const res = { total:0, errors:[], warnings:[], unitErr:{} };
   if (!D) return res;
@@ -1656,6 +1725,7 @@ function validate0(l){
     res.warnings.push(`${unitLabel(l,tgt)} has ${leaders[t].length} Leaders attached. Only some datasheets allow this, so check their Leader rules.`);
   }
   agentsCheck(l, bad);
+  alliesCheck(l, bad);
   return res;
 }
 function listText(l){
@@ -2045,8 +2115,10 @@ function viewBuild0(){
     const q = (S.addQ || "").toLowerCase().trim();
     const sr = open ? searchIds(l.army, q, g) : { ids:[], hints:{} };
     const shown = sr.ids;
-    return `<details class="sect sectfold${g === "Imperial Agents" ? " allysect" : ""}" aria-label="${esc(g)}"${keepAttr("b-" + g)}>
-      <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3>${g === "Imperial Agents" ? `<span class="muted small">Allies</span>` : ""}<span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
+    const ally = ALLY_GROUPS.has(g) ? ALLY_RULES.find(r => r.group === g && r.hosts(fidOf(l.army))) : null;
+    return `<details class="sect sectfold${ally ? " allysect" : ""}" aria-label="${esc(g)}"${keepAttr("b-" + g)}>
+      <summary class="sect-h"><h3>${esc(catLabel(g, l.army))}</h3>${ally ? `<span class="muted small">Allies</span>` : ""}<span class="muted small num">${mine.length ? mine.length + " · " + pts + " pts" : "None"}</span></summary><div class="sect-b">
+      ${ally ? `<div class="small muted allynote">${esc(allyNote(ally, l))}</div>` : ""}
       ${mine.map(u => unitCard(l, u, v)).join("")}
       ${ids.length ? `<button class="addbtn" data-act="addopen" data-v="${esc(g)}" aria-expanded="${open}">${open ? SVG.down : "+"} Add ${esc(catOne(g, l.army))}<span class="muted small">${ids.length} available</span></button>` : ""}
       ${open ? `<div class="adddrop">${ids.length > 8 ? `<input type="search" id="addq" data-in="addq" placeholder="Search by name or ability" value="${esc(S.addQ||"")}" aria-label="Search ${esc(g)}">` : ""}<div id="addres">${dsRows(shown, true, sr.hints)}</div></div>` : ""}
@@ -2113,8 +2185,8 @@ function unitCard(l, u, v){
       <details class="dsub unit-edit"${keepAttr("unit-edit")}><summary>Edit unit <span class="muted small">size, ${isChar ? "Warlord, enhancement, " : ""}wargear${canLead.length ? ", attach" : ""}</span></summary><div class="stack" style="gap:10px;margin-top:8px">
       ${rows.length > 1 ? `<div class="sizerow"><label class="f grow" for="sz-${u.uid}">Unit size<select id="sz-${u.uid}" data-ch="usize" data-u="${u.uid}">${rows.map(x => `<option value="${esc(x.line)}"${x===r?" selected":""}>${esc(plain(x.label))} · ${x.cost} pts</option>`).join("")}</select></label><button class="btn small${r===rows[0]?" primary":""}" data-act="usizemin" data-u="${u.uid}" aria-label="Smallest size">Min</button><button class="btn small${r===rows[rows.length-1]?" primary":""}" data-act="usizemax" data-u="${u.uid}" aria-label="Largest size">Max</button></div>` : `<div class="small muted">${r ? esc(plain(r.label)) + " · " + r.cost + " pts" : "No points in the data"}</div>`}
       ${addonRows(u.ds).map(a => `<label class="check"><input type="checkbox" data-ch="uaddon" data-u="${u.uid}" data-line="${esc(a.line)}"${u.addons && u.addons[a.line] ? " checked" : ""}><span>Add ${esc(plain(a.label))} <span class="muted">(+${a.cost} pts)</span></span></label>`).join("")}
-      ${isChar ? `<label class="check"><input type="checkbox" data-ch="warlord" data-u="${u.uid}"${u.warlord?" checked":""}><span>Warlord</span></label>` : ""}
-      ${isChar && !isEpic ? `<label class="f" for="en-${u.uid}">Enhancement<select id="en-${u.uid}" data-ch="uenh" data-u="${u.uid}"><option value="">None</option>${enhs.map(e => `<option value="${esc(e.id)}"${u.enh===e.id?" selected":""}>${esc(e.name)} (+${num(e.cost)} pts)</option>`).join("")}</select></label>${!l.det ? `<div class="small muted">Choose a detachment to see its enhancements.</div>` : ""}` : ""}
+      ${isChar && !(allyLimits(allyOf(u.ds, l.army) || {}, l).noWl) ? `<label class="check"><input type="checkbox" data-ch="warlord" data-u="${u.uid}"${u.warlord?" checked":""}><span>Warlord</span></label>` : ""}
+      ${isChar && !isEpic && !(allyLimits(allyOf(u.ds, l.army) || {}, l).noEnh) ? `<label class="f" for="en-${u.uid}">Enhancement<select id="en-${u.uid}" data-ch="uenh" data-u="${u.uid}"><option value="">None</option>${enhs.map(e => `<option value="${esc(e.id)}"${u.enh===e.id?" selected":""}>${esc(e.name)} (+${num(e.cost)} pts)</option>`).join("")}</select></label>${!l.det ? `<div class="small muted">Choose a detachment to see its enhancements.</div>` : ""}` : ""}
       ${canLead.length ? `<label class="f" for="ld-${u.uid}">Attached to<select id="ld-${u.uid}" data-ch="ulead" data-u="${u.uid}"><option value="">Not attached</option>${targets.map(t => `<option value="${t.uid}"${u.lead===t.uid?" selected":""}>${esc(unitLabel(l,t))}</option>`).join("")}</select></label>${!targets.length ? `<div class="small muted">Can lead: ${canLead.map(id => esc(D.ds[id]?.name||"")).filter(Boolean).join(", ")}. Add one of those to attach.</div>`:""}` : ""}
       ${lead.length ? `<div class="wgbox"><div class="sec-h">${esc(leadName.replace(/^\w/, c => c.toUpperCase()))} wargear</div>${lead.map(optHtml).join("")}</div>` : ""}
       ${squad.length ? `<div class="wgbox"><div class="sec-h">${lead.length ? "Squad wargear" : "Wargear options"}</div>${squad.map(optHtml).join("")}</div>` : ""}
@@ -3184,7 +3256,7 @@ document.addEventListener("click", e => {
       const id = t.dataset.id; if (l.units.filter(u => u.ds === id).length >= maxOf(id)) { toast("That's the maximum for this unit."); break; }
       const c = costRows(id);
       const u = { uid:uid(), ds:id, name:D.ds[id].name, line:c[0]?.line || null, enh:null, warlord:false, lead:null, opts:[], notes:"" };
-      if (!l.units.some(x => x.warlord) && D.kwSet[id]?.has("CHARACTER")) u.warlord = true;
+      if (!l.units.some(x => x.warlord) && D.kwSet[id]?.has("CHARACTER") && !allyLimits(allyOf(id, l.army) || {}, l).noWl) u.warlord = true;
       l.units.push(u); saveList(l); toast(`Added ${D.ds[id].name}`);
       if (t.dataset.close) closeSheet("ds");
       { const anc = t.closest("#armyres") ? "#armyres" : "#addres", before = $(anc)?.getBoundingClientRect().top;
