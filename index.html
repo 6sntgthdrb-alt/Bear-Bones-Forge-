@@ -719,6 +719,8 @@ details.sectfold{display:block}
 .sectfold > summary::-webkit-details-marker{display:none}
 .sectfold > summary::after{content:"▾";position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:1.1rem;color:var(--acc-text,var(--accent));transition:transform .2s}
 .sectfold:not([open]) > summary::after{transform:translateY(-50%) rotate(-90deg)}
+.sectfold > summary.sect-h,[data-style="clean"] .sectfold > summary.sect-h{padding-right:30px !important}
+.sectfold > summary.sect-h > :last-child:not(h3){white-space:nowrap}
 .sect-b{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .autotag{font:600 .7rem var(--ui,inherit);text-transform:none;letter-spacing:0;padding:1px 7px;border-radius:999px;background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--text);margin-left:6px}
 .abfx{align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}
