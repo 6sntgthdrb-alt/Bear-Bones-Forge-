@@ -732,6 +732,24 @@ details.sectfold{display:block}
 .wgc.on .wgdot{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--bg)}
 .wgc.fixed{cursor:default;opacity:.85}
 .wgpanel{margin-top:14px}
+.wghint{margin:-2px 0 6px}
+.wggs{margin:-4px 2px 8px;line-height:1.35}
+.wgg{margin:12px 0 4px}
+.wggh{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin:0 2px 8px;font:600 .72rem var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.wggr{letter-spacing:.04em;text-transform:none;font-weight:600;color:var(--acc-text,var(--accent));white-space:nowrap}
+.wpick{border:1px solid var(--line);border-radius:var(--r);padding:12px 12px 4px;margin:0 0 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .15s,background-color .15s,opacity .15s}
+.wpick:not(.on){opacity:.55}
+.wpick.on{border-color:color-mix(in srgb,var(--accent) 60%,var(--line));background:color-mix(in srgb,var(--accent) 6%,transparent);opacity:1}
+.wpick.locked{cursor:default}
+.wpick:active{transform:scale(.995)}
+.wpick-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.wpick-n{font-weight:700;font-size:1.02rem}
+.wpick .tag{font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:1px 7px;color:var(--muted);vertical-align:2px;margin-left:4px;font-weight:600}
+.wpick .wpn{border:0;padding:0;margin:0 0 8px}
+.wpick .wpn .wn:empty{display:none}
+.wpick .wpn .wn{font-size:.8rem;color:var(--muted);text-transform:capitalize;margin-bottom:4px}
+.wpick.on .wgdot{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--bg)}
+.wpick.locked .wgdot{opacity:.6}
 .ccbox .wgc{background:var(--bg)}
 .ccsum{display:grid;gap:6px;margin:0 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:color-mix(in srgb,var(--accent) 6%,transparent)}
 .sect-h h3 .sect-n{color:var(--muted);font-weight:500;letter-spacing:.12em;margin-left:-4px}
@@ -1303,10 +1321,8 @@ function ccEditHtml(l, u){ const st = ccState(u, l.army); if (!st) return ""; co
   return `<div class="wgbox ccbox"><div class="sec-h">Build your champion</div>
     ${st.specs.length ? `<label class="f" for="ccs-${id}">Specialism <span class="muted small">(optional)</span><select id="ccs-${id}" data-ch="ccspec" data-u="${id}"><option value="">None</option>${st.specs.map(x => opt(x, c.spec)).join("")}</select></label>${st.spec ? `<div class="small muted">${esc(st.spec.text)}</div>` : ""}` : ""}
     <label class="f" for="cca-${id}">Ability <span class="muted small">(choose 1)</span><select id="cca-${id}" data-ch="ccabil" data-u="${id}"><option value="">Choose…</option>${st.abils.map(x => opt(x, c.abil)).join("")}</select></label>${st.abil ? `<div class="small muted">${esc(st.abil.text)}</div>` : ""}
-    <div class="small"><b>Weapons</b> <span class="muted">${st.dread ? "Dreadnought loadout, see the steps below" : `at least 1 melee weapon · first 2 free, then +5 pts each · ${n} chosen${n > 2 ? ` (+${5 * (n - 2)} pts)` : ""}`}</span></div>
     ${st.dread ? `<details class="dsub"><summary>Dreadnought loadout steps</summary><div class="small" style="white-space:pre-line">${esc(st.notes.__dread)}</div></details>` : ""}
-    ${!meleeN && !st.dread ? `<div class="small" style="color:var(--bad)">Choose at least one melee weapon.</div>` : ""}
-    ${groups.map(([t, h]) => { const ws = st.avail.filter(w => w.type === t); if (!ws.length) return ""; seen.clear(); return `<div class="wgh">${h}</div>${ws.map(wRow).join("")}`; }).join("")}
+    <div class="small muted">Pick weapons in the Wargear section below.</div>
     ${Object.entries(st.notes).filter(([k, v]) => k !== "__dread" && /more than|must also|per army/i.test(v)).map(([k, v]) => `<div class="small muted">${esc(k)} ${esc(v)}</div>`).join("")}
   </div>`; }
 /* One-line summary of a champion's build, for shared/printed lists. */
@@ -2373,8 +2389,8 @@ function unitCard(l, u, v){
     const wpSet = unitWeapons(u);
     body = `<div class="unit-b">
       ${isCrucible(u.ds) ? ccSummary(u, l) : ""}
-      <div class="unit-ds">${dsBody(u.ds, { ...(wpSet ? { weapons: wpSet } : {}), compact: true, ...(isCrucible(u.ds) ? ccDsOpts(u, l.army) : {}) })}</div>
-      ${S.inDsPage ? (isCrucible(u.ds) ? ccEditHtml(l, u) : wgPanelHtml(l, u)) : ""}
+      ${S.inDsPage && isCrucible(u.ds) ? ccEditHtml(l, u) : ""}
+      <div class="unit-ds">${dsBody(u.ds, { ...(wpSet && !S.inDsPage ? { weapons: wpSet } : {}), compact: true, ...(isCrucible(u.ds) ? ccDsOpts(u, l.army) : {}), ...(S.inDsPage ? { pick: isCrucible(u.ds) ? ccPick(l, u) : wgPick(l, u) } : {}) })}</div>
       <details class="dsub unit-edit"${keepAttr("unit-edit")}><summary>Edit unit <span class="muted small">${[rows.length > 1 || addonRows(u.ds).length ? "size" : "", isChar ? (isCrucible(u.ds) ? "Warlord" : "Warlord, enhancement") : "", S.inDsPage ? "" : "wargear", canLead.length ? "attach" : ""].filter(Boolean).join(", ") || "notes"}</span></summary><div class="stack" style="gap:10px;margin-top:8px">
       ${rows.length > 1 ? `<div class="sizerow"><label class="f grow" for="sz-${u.uid}">Unit size<select id="sz-${u.uid}" data-ch="usize" data-u="${u.uid}">${rows.map(x => `<option value="${esc(x.line)}"${x===r?" selected":""}>${esc(plain(x.label))} · ${x.cost} pts</option>`).join("")}</select></label><button class="btn small${r===rows[0]?" primary":""}" data-act="usizemin" data-u="${u.uid}" aria-label="Smallest size">Min</button><button class="btn small${r===rows[rows.length-1]?" primary":""}" data-act="usizemax" data-u="${u.uid}" aria-label="Largest size">Max</button></div>` : `<div class="small muted">${r ? esc(plain(r.label)) + " · " + r.cost + " pts" : "No points in the data"}</div>`}
       ${addonRows(u.ds).map(a => `<label class="check"><input type="checkbox" data-ch="uaddon" data-u="${u.uid}" data-line="${esc(a.line)}"${u.addons && u.addons[a.line] ? " checked" : ""}><span>Add ${esc(plain(a.label))} <span class="muted">(+${a.cost} pts)</span></span></label>`).join("")}
@@ -2614,12 +2630,58 @@ function wgPanelHtml(l, u){
   return `<details class="dsfold wgpanel" data-keep="wgpanel"${S.keep.wgpanel === false ? "" : " open"}><summary class="sec-h">Wargear</summary>
     <div class="small muted" style="margin:-2px 0 8px">Tap to equip. Filled circles are what this unit has.</div>${sec}${other ? `<div class="wgh">Other options</div>${other}` : ""}</details>`;
 }
+/* Wargear groups for the Build page: each Wahapedia option becomes a group ("Heavy bolt pistol or a swap · choose 1 of 3"). */
+const capFirst = t => String(t || "").replace(/^\w/, c => c.toUpperCase());
+function wgPick(l, u){
+  const id = u.ds, m = wgMap(u), have = unitWeapons(u) || new Set(), rowsBy = {};
+  (D.wg[id]||[]).forEach(w => { const st = wStem(w.name); if (st) (rowsBy[st] ||= []).push(w); });
+  const all = new Set(Object.keys(rowsBy)), used = new Set(), groups = [];
+  const nm = st => rowsBy[st][0].name.split(/\s+[–—-]\s+/)[0];
+  const item = (st, x = {}) => ({ name:nm(st), rows:rowsBy[st], on:have.has(st), attrs:`data-act="wgtap" data-u="${u.uid}" data-stem="${esc(st)}"`, ...x });
+  const cnt = (o, st) => { const mx = optMax(o, u), v = wgOptState(u, o); if (!mx || !v) return "";
+    const gives = o.choices.length ? stemsIn(o.choices[v - 1] || "", all) : stemsIn(o.text, all); if (!gives.has(st)) return "";
+    return `<label class="small cntrow" data-stop="1">How many models? <input type="number" inputmode="numeric" min="1" max="${mx}" class="owninp" data-ch="uwgn" data-u="${u.uid}" data-line="${esc(o.line)}" value="${optCount(u, o)}"></label>`; };
+  const opts = optsOf(id);
+  opts.filter(o => o.choices.length).forEach(o => {
+    const keep = o.keep ? [...stemsIn(o.keep, all)] : [], stems = [...keep];
+    o.choices.forEach(c => stemsIn(c, all).forEach(st => { if (!stems.includes(st)) stems.push(st); }));
+    const fresh = stems.filter(st => !used.has(st)); if (!fresh.length) return; fresh.forEach(st => used.add(st));
+    const mx = optMax(o, u), who = /^(\d+|one|all|each|every|any)\b/i.test(o.subject) || /model/i.test(o.subject) ? capFirst(o.subject.replace(/\s*can be replaced.*$/i, "").replace(/\s*replaced$/i, "")) : "";
+    groups.push({ label: keep.length ? `${capFirst(nm(keep[0]))}${keep.length > 1 ? " and " + keep.slice(1).map(nm).join(", ") : ""} or a swap` : capFirst(o.subject.replace(/:$/, "")),
+      rule: (keep.length ? `Choose 1 of ${fresh.length}` : `Optional · up to 1`) + (mx ? ` · up to ${mx} models` : ""),
+      sub: capFirst(plain(o.subject).replace(/\s*:\s*$/, "").replace(/\s+(?:with|by)?\s*one of the following$/i, "").replace(/ can be replaced$/i, " can be swapped").replace(/ replaced$/i, " can be swapped")),
+      items: fresh.map(st => item(st, { tag: keep.includes(st) ? "Standard" : "", extra: cnt(o, st) })) });
+  });
+  const extras = []; opts.filter(o => !o.choices.length).forEach(o => { const after = o.text.split(/replaced with|equipped with|have/i).slice(1).join(" "); stemsIn(after || o.text, all).forEach(st => { if (!used.has(st)) { used.add(st); extras.push(item(st, { extra: cnt(o, st) })); } }); });
+  const fixed = [...m.base].filter(st => !used.has(st) && rowsBy[st]); fixed.forEach(st => used.add(st));
+  const rest = [...all].filter(st => !used.has(st));
+  if (fixed.length) groups.unshift({ label:"Always equipped", rule:"Can't be changed", items: fixed.map(st => item(st, { locked:true, on:true })) });
+  if (extras.length) groups.push({ label:"Optional extras", rule:"Tap to add", items: extras });
+  if (rest.length) groups.push({ label:"Other weapons", rule:"", items: rest.map(st => item(st)) });
+  const other = m.extra.map(x => ({ name:plain(x.label), rows:[], on: wgOptState(u, x.o) === x.i, attrs:`data-act="wgopt" data-u="${u.uid}" data-line="${esc(x.o.line)}" data-i="${x.i}"` }));
+  if (other.length) groups.push({ label:"Other options", rule:"Tap to add", items: other });
+  return { hint:"Tap a weapon to equip it. Within a group, picking one swaps out the others. Filled circle = equipped.", groups };
+}
+function ccPick(l, u){
+  const st = ccState(u, l.army); if (!st) return null; const groups = [], seen = new Set();
+  const row = w => ({ name:w.name, range:w.range.replace('"', ""), type:w.type === "melee" ? "Melee" : "Ranged", a:w.a, bs_ws:w.bs.replace("+", ""), s:w.s, ap:w.ap, d:w.d, description:ccKwList(w.kw).map(lc).join(", ") });
+  [["ranged","Ranged weapons"],["pistol","Pistols"],["melee","Melee weapons"]].forEach(([t, h]) => {
+    const keys = [...new Set(st.avail.filter(w => w.type === t).map(st.keyOf))].filter(k => !seen.has(k)); if (!keys.length) return; keys.forEach(k => seen.add(k));
+    groups.push({ label:h, rule: st.dread ? "See the loadout steps" : (t === "melee" ? "Pick any · at least 1 melee in total" : "Pick any"),
+      items: keys.map(k => { const ws = st.avail.filter(w => st.keyOf(w) === k), isB = st.bonus.includes(k), fixed = Math.max(0, ...ws.map(w => w.pts || 0)) || (st.dread ? ccDreadPts(st.notes.__dread, [k]) : 0);
+        return { name:k, rows:ws.map(row), on: st.picked.includes(k) || isB, locked:isB, tag: isB ? "Specialism" : (fixed ? `+${fixed} pts` : ""), attrs:`data-act="ccwtap" data-u="${u.uid}" data-w="${esc(k)}"` }; }) });
+  });
+  const n = st.picked.length;
+  return { hint: st.dread ? "Dreadnought: build the loadout using the steps above." : `Pick any weapons, including at least 1 melee weapon. The first 2 are free, then +5 pts each. ${n} chosen${n > 2 ? ` (+${5 * (n - 2)} pts)` : ""}.`, groups };
+}
 function wgTap(l, u, stem){
   const m = wgMap(u), have = unitWeapons(u) || new Set(), ps = m.prov[stem] || [];
   if (!u.wg) { u.wg = {}; (u.opts||[]).forEach(x => u.wg[x] = 1); u.opts = []; }
   const picked = ps.find(p => u.wg[p.o.line] === p.i);
   if (picked) { delete u.wg[picked.o.line]; return; }
-  if (have.has(stem)) { toast("That's standard wargear. Tap the weapon you want to swap it for."); return false; }
+  const swapped = optsOf(u.ds).find(o => o.keep && u.wg[o.line] && stemsIn(o.keep, m.stems).has(stem));
+  if (swapped && !have.has(stem)) { delete u.wg[swapped.line]; return; }
+  if (have.has(stem)) { toast("That's the standard weapon. Tap one of the other weapons in its group to swap it."); return false; }
   if (!ps.length) { toast("This unit can't take that weapon."); return false; }
   const p = ps.find(x => !u.wg[x.o.line]) || ps[0]; u.wg[p.o.line] = p.i;
 }
@@ -2644,6 +2706,14 @@ function dsBody(id, opt = {}){
   const box = (l, v, cls = "") => `<div class="sbox${cls}${String(v||"").length > 3 ? " long" : ""}"><span class="sl">${l}</span><span class="sv">${esc(v || "–")}</span></div>`;
   const stats = models.length ? `<div class="statblock">${models.map(m => `${models.length>1?`<div class="mname">${esc(m.name)}</div>`:""}<div class="sg6">${box("M",m.m)}${box("T",m.t)}${box("SV",m.sv)}${box("W",m.w)}${box("LD",m.ld)}${box("OC",m.oc)}</div>`).join("")}</div>
     ${models.filter(m => m.inv_sv && m.inv_sv !== "-").map(m => `<div class="small"><b>Invulnerable save ${esc(/^\d$/.test(m.inv_sv) ? m.inv_sv + "+" : m.inv_sv)}</b>${models.length>1?` (${esc(m.name)})`:""}${m.inv_sv_descr?` · <span class="rich">${sanitize(m.inv_sv_descr)}</span>`:""}</div>`).join("")}` : "";
+  const wblock = (w, type) => { const kw = w.description ? plain(w.description).split(/\s*,\s*/).filter(Boolean) : [];
+      return `<div class="wpn"><div class="wn">${esc(w.name)}</div><div class="sg6 sm">${box("RNG", /^\d+$/.test(w.range) ? w.range + '"' : (w.range||"Melee"))}${box("A",w.a)}${box(type==="ranged"?"BS":"WS", /^\d$/.test(w.bs_ws) ? w.bs_ws + "+" : w.bs_ws)}${box("S",w.s)}${box("AP",w.ap)}${box("D",w.d)}</div>${kw.length ? `<div class="wkw">${kw.map(k => ruleFor(k) ? `<button class="wtag" data-act="rule" data-k="${esc(k)}">${esc(k)}</button>` : `<span class="wtag">${esc(k)}</span>`).join("")}</div>` : ""}</div>`; };
+  /* Build page: weapons grouped by the choice they belong to, each block tappable with a circle. */
+  const wpick = () => { const P = opt.pick; return `<div><div class="sec-h">Wargear</div><div class="small muted wghint">${esc(P.hint || "Tap a weapon to equip it. Filled circle = equipped.")}</div>${P.groups.map(g => `<div class="wgg"><div class="wggh"><span>${esc(g.label)}</span>${g.rule ? `<span class="wggr">${esc(g.rule)}</span>` : ""}</div>${g.sub ? `<div class="small muted wggs">${esc(g.sub)}</div>` : ""}${g.items.map(it => {
+      const rows = it.rows; return `<div class="wpick${it.on ? " on" : ""}${it.locked ? " locked" : ""}"${it.locked ? "" : ` ${it.attrs} role="button" tabindex="0"`} aria-pressed="${it.on}">
+        <div class="wpick-h"><span class="wpick-n">${esc(it.name)}${it.tag ? ` <span class="tag">${esc(it.tag)}</span>` : ""}</span><span class="wgdot" aria-hidden="true"></span></div>
+        ${rows.map(w => wblock({ ...w, name: rows.length > 1 ? (w.name.split(/\s+[–—-]\s+/)[1] || w.name) : "" }, /melee/i.test(w.type || w.range) ? "melee" : "ranged")).join("")}
+        ${it.extra || ""}</div>`; }).join("")}</div>`).join("")}</div>`; };
   const wtable = type => {
     const rows = wg.filter(w => (w.type||"").toLowerCase().startsWith(type));
     if (!rows.length) return "";
@@ -2658,7 +2728,7 @@ function dsBody(id, opt = {}){
   const leads = [...new Set((opt.leads || D.lead[id]||[]).filter(x => !la || eligible(x, la)).map(x => D.ds[x]?.name).filter(Boolean))];
   const html = `
     ${stats}
-    ${wtable("ranged")}${wtable("melee")}
+    ${opt.pick ? wpick() : wtable("ranged") + wtable("melee")}
     <div><div class="sec-h">Abilities</div>
       ${core.length ? `<div class="chips" style="margin-bottom:6px">${core.map(a => ruleFor(a.name) ? `<button class="pill kwpill" data-act="rule" data-k="${esc(a.name)}">${esc(a.type)}: ${esc(a.name)}${a.param?" "+esc(a.param):""}</button>` : `<span class="pill">${esc(a.type)}: ${esc(a.name)}${a.param?" "+esc(a.param):""}</span>`).join("")}</div>` : ""}
       ${other.map(a => `<div class="ab"><b class="n">${esc(a.name)}</b>${a.param?` <span class="muted">${esc(a.param)}</span>`:""}${/^wargear/i.test(a.type)?` <span class="small muted">(Wargear)</span>`:""}<div class="rich">${sanitize(a.desc)}</div></div>`).join("")}
