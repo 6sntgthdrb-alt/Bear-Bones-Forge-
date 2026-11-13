@@ -1386,14 +1386,14 @@ function allyNote(r, l){ r = allyLimits(r, l); const sz = sizeIx(l), bits = [];
   if (r.noWl && r.noEnh) bits.push("Can't be your Warlord or take Enhancements."); else if (r.noWl) bits.push("Can't be your Warlord.");
   if (r.note) bits.push(r.note);
   return `${r.rule}: ${bits.join(" ")}`; }
-function eligible(id, army){
+function eligible(id, army, all = false){
   const d = D.ds[id]; if (!d) return false;
   const ar = allyOf(id, army);
   if (d.faction_id !== fidOf(army) && !ar) return false;
   if (ar && ar.ok && !ar.ok(id)) return false;
-  if (isCrucible(id) && S.settings.crucible === false) return false;
+  if (!all && isCrucible(id) && !S.settings.crucible) return false;
   if (String(d.virtual).toLowerCase() === "true") return false;
-  if (!S.settings.legends && isLegends(id)) return false;
+  if (!all && !S.settings.legends && isLegends(id)) return false;
   if (fidOf(army) === "SM" && d.faction_id === "SM") {
     const k = D.kwSet[id] || new Set(), mine = chapterOf(army);
     if (mine ? (!k.has(mine) && CHAPTERS.some(c => c !== mine && k.has(c))) : CHAPTERS.some(c => k.has(c))) return false;
@@ -1894,7 +1894,7 @@ function validate0(l){
   }
   l.units.forEach(u => {
     if (!D.ds[u.ds]) bad(u, `"${u.name||"A unit"}" isn't in the imported data any more. Remove it or re-import.`);
-    else if (!eligible(u.ds, l.army)) bad(u, `${D.ds[u.ds].name} can't be taken in a ${armyName(l.army, l)} army.`);
+    else if (!eligible(u.ds, l.army, true)) bad(u, `${D.ds[u.ds].name} can't be taken in a ${armyName(l.army, l)} army.`);
     if (D.ds[u.ds] && !costRows(u.ds).length) bad(u, `${D.ds[u.ds].name} has no points in the data.`, false);
   });
   const enhUnits = l.units.filter(u => u.enh);
@@ -1910,6 +1910,7 @@ function validate0(l){
     if (l.det && !matchDet(e, l.det)) bad(u, `${e.name} isn't from the ${l.det.name} detachment.`);
     const allow = D.enhDs[u.enh]; if (allow && allow.size && !allow.has(u.ds)) bad(u, `${unitLabel(l,u)} isn't allowed to take ${e.name}.`);
   });
+  if (l.units.some(u => isCrucible(u.ds))) res.warnings.push("This list includes Crucible Champions. They're narrative rules from The Maelstrom: Crucible of Champions, so check your opponent (or event) is happy to use them.");
   const leg = l.units.filter(u => D.ds[u.ds] && isLegends(u.ds));
   if (leg.length) res.warnings.push(`This list includes Legends units (${[...new Set(leg.map(u => D.ds[u.ds].name))].join(", ")}). They aren't allowed in most matched play events, so check with your opponent.`);
   const wl = l.units.filter(u => u.warlord);
@@ -3384,7 +3385,7 @@ function viewData(){
       ${!window.claude && /^https?:$/.test(location.protocol) ? `<button class="btn" data-act="sitedata">Reload data from the site</button>` : ""}
       ${!window.claude ? `<p class="small muted" style="margin:0"><b>Save everything</b> puts your rules data, missions, lists and icons in one file. Load it on a new device to set it up in one go.</p>` : ""}</div>
     <div class="card stack" style="gap:8px"><label class="check"><input type="checkbox" data-ch="legends"${S.settings.legends?" checked":""}><span>Show Legends datasheets</span></label>
-      <label class="check"><input type="checkbox" data-ch="crucible"${S.settings.crucible !== false ? " checked" : ""}><span>Show Crucible of Champions (build-your-own characters, narrative rules)</span></label></div>
+      <label class="check"><input type="checkbox" data-ch="crucible"${S.settings.crucible ? " checked" : ""}><span>Show Crucible of Champions (build-your-own characters, narrative rules)</span></label></div>
     <div class="card stack about"><h3>About</h3>
       <div><b>Bear Bones Forge</b><div class="small muted">Army builder and battle companion for Warhammer 40,000, 10th edition</div></div>
       <p class="small" style="margin:0">This is an unofficial, fan-made tool for personal and hobby use. It is free, it is not for sale, and it is not approved, endorsed by or affiliated with Games Workshop Limited.</p>
